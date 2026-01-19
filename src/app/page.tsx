@@ -1,167 +1,242 @@
-import Link from "next/link";
+"use client";
+
+import { useState } from "react";
+import { Header, Container } from "@/components/layout";
+import { KeywordForm, PublishSettings } from "@/components/forms";
+import { ProgressBar, StepIndicator, StatusMessage } from "@/components/progress";
+import { Button, Card, CardTitle, CardContent } from "@/components/ui";
+import { DEFAULT_PUBLISH_SETTINGS } from "@/constants";
+import type { AiModel, PublishSettings as PublishSettingsType, WorkflowState } from "@/types";
 
 export default function Home() {
+  // 키워드 및 AI 모델 상태
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [aiModel, setAiModel] = useState<AiModel>("claude");
+
+  // 발행 설정 상태
+  const [publishSettings, setPublishSettings] = useState<PublishSettingsType>(
+    DEFAULT_PUBLISH_SETTINGS
+  );
+
+  // 워크플로우 상태
+  const [workflowState, setWorkflowState] = useState<WorkflowState>({
+    status: "idle",
+    currentKeywordIndex: 0,
+    totalKeywords: 0,
+    currentStep: "",
+    progress: 0,
+    results: [],
+  });
+
+  const isRunning = workflowState.status !== "idle" &&
+                    workflowState.status !== "completed" &&
+                    workflowState.status !== "error";
+
+  const handleExecute = async () => {
+    if (keywords.length === 0) {
+      alert("키워드를 입력해주세요.");
+      return;
+    }
+
+    // TODO: Phase 3, 4에서 실제 워크플로우 구현
+    // 현재는 UI 테스트용 시뮬레이션
+    setWorkflowState({
+      status: "collecting",
+      currentKeywordIndex: 0,
+      totalKeywords: keywords.length,
+      currentStep: `"${keywords[0]}" 상품 수집 중...`,
+      progress: 10,
+      results: [],
+    });
+
+    // 시뮬레이션: 2초 후 다음 단계
+    setTimeout(() => {
+      setWorkflowState((prev) => ({
+        ...prev,
+        status: "generating",
+        currentStep: `"${keywords[0]}" 글 작성 중...`,
+        progress: 40,
+      }));
+    }, 2000);
+
+    setTimeout(() => {
+      setWorkflowState((prev) => ({
+        ...prev,
+        status: "uploading",
+        currentStep: `"${keywords[0]}" 업로드 중...`,
+        progress: 70,
+      }));
+    }, 4000);
+
+    setTimeout(() => {
+      setWorkflowState((prev) => ({
+        ...prev,
+        status: "completed",
+        currentStep: "완료",
+        progress: 100,
+        results: [
+          {
+            keyword: keywords[0],
+            success: true,
+            postUrl: "https://example.com/post/1",
+            scheduledTime: new Date().toISOString(),
+          },
+        ],
+      }));
+    }, 6000);
+  };
+
+  const handleReset = () => {
+    setWorkflowState({
+      status: "idle",
+      currentKeywordIndex: 0,
+      totalKeywords: 0,
+      currentStep: "",
+      progress: 0,
+      results: [],
+    });
+  };
+
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">
-            쿠팡 파트너스 자동 블로그
-          </h1>
-          <Link
-            href="/settings"
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            title="설정"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      <Header />
+
+      <main className="py-8">
+        <Container>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* 키워드 입력 */}
+            <KeywordForm
+              keywords={keywords}
+              onKeywordsChange={setKeywords}
+              aiModel={aiModel}
+              onAiModelChange={setAiModel}
+              disabled={isRunning}
+            />
+
+            {/* 발행 설정 */}
+            <PublishSettings
+              settings={publishSettings}
+              onSettingsChange={setPublishSettings}
+              disabled={isRunning}
+            />
+          </div>
+
+          {/* 실행 버튼 */}
+          <div className="mt-6 flex gap-4">
+            <Button
+              size="lg"
+              className="flex-1"
+              onClick={handleExecute}
+              disabled={isRunning || keywords.length === 0}
+              isLoading={isRunning}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </Link>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* 키워드 입력 섹션 */}
-          <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              키워드 입력
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="keywords"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  키워드 (줄바꿈으로 구분)
-                </label>
-                <textarea
-                  id="keywords"
-                  rows={6}
-                  className="input resize-none"
-                  placeholder="무선 이어폰&#10;블루투스 스피커&#10;게이밍 마우스"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  AI 모델 선택
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="aiModel"
-                      value="claude"
-                      defaultChecked
-                      className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Claude</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="aiModel"
-                      value="gemini"
-                      className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Gemini</span>
-                  </label>
-                </div>
-              </div>
-            </div>
+              {isRunning ? "실행 중..." : "실행하기"}
+            </Button>
+            {(workflowState.status === "completed" || workflowState.status === "error") && (
+              <Button size="lg" variant="secondary" onClick={handleReset}>
+                초기화
+              </Button>
+            )}
           </div>
 
-          {/* 발행 설정 섹션 */}
-          <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              발행 설정
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="interval"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  발행 간격 (분)
-                </label>
-                <input
-                  type="number"
-                  id="interval"
-                  defaultValue={10}
-                  min={1}
-                  className="input"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="startTime"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    시작 시간
-                  </label>
-                  <input
-                    type="time"
-                    id="startTime"
-                    defaultValue="09:00"
-                    className="input"
+          {/* 진행 상황 */}
+          <Card className="mt-8">
+            <CardTitle>진행 상황</CardTitle>
+            <CardContent className="space-y-6">
+              {workflowState.status !== "idle" && (
+                <>
+                  <StepIndicator currentStatus={workflowState.status} />
+                  <ProgressBar
+                    progress={workflowState.progress}
+                    variant={
+                      workflowState.status === "error"
+                        ? "error"
+                        : workflowState.status === "completed"
+                        ? "success"
+                        : "primary"
+                    }
                   />
-                </div>
-                <div>
-                  <label
-                    htmlFor="endTime"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    종료 시간
-                  </label>
-                  <input
-                    type="time"
-                    id="endTime"
-                    defaultValue="18:00"
-                    className="input"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                </>
+              )}
+              <StatusMessage
+                status={workflowState.status}
+                currentStep={workflowState.currentStep}
+                currentKeywordIndex={workflowState.currentKeywordIndex}
+                totalKeywords={workflowState.totalKeywords}
+                error={workflowState.error}
+              />
 
-        {/* 실행 버튼 */}
-        <div className="mt-6">
-          <button className="btn-primary w-full py-3 text-base">
-            실행하기
-          </button>
-        </div>
-
-        {/* 진행 상황 섹션 (추후 구현) */}
-        <div className="mt-8 card bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            진행 상황
-          </h2>
-          <div className="text-center py-8 text-gray-500">
-            실행 버튼을 클릭하면 진행 상황이 여기에 표시됩니다.
-          </div>
-        </div>
+              {/* 결과 목록 */}
+              {workflowState.results.length > 0 && (
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    처리 결과
+                  </h4>
+                  <div className="space-y-2">
+                    {workflowState.results.map((result, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between p-3 rounded-lg ${
+                          result.success ? "bg-success-50" : "bg-error-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {result.success ? (
+                            <svg
+                              className="w-4 h-4 text-success"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              className="w-4 h-4 text-error"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          )}
+                          <span className="text-sm font-medium">
+                            {result.keyword}
+                          </span>
+                        </div>
+                        {result.success && result.postUrl && (
+                          <a
+                            href={result.postUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline"
+                          >
+                            글 보기
+                          </a>
+                        )}
+                        {!result.success && result.error && (
+                          <span className="text-sm text-error">
+                            {result.error}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </Container>
       </main>
     </div>
   );

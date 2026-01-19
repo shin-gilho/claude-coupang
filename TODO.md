@@ -32,31 +32,31 @@
 ## Phase 2: UI 컴포넌트 개발 (ui-developer)
 
 ### 2.1 기본 UI 컴포넌트
-- [ ] `components/ui/Button.tsx`
-- [ ] `components/ui/Input.tsx`
-- [ ] `components/ui/Textarea.tsx`
-- [ ] `components/ui/Select.tsx`
-- [ ] `components/ui/Card.tsx`
-- [ ] `components/ui/Modal.tsx`
-- [ ] `components/ui/Toast.tsx`
+- [x] `components/ui/Button.tsx`
+- [x] `components/ui/Input.tsx`
+- [x] `components/ui/Textarea.tsx`
+- [x] `components/ui/Select.tsx`
+- [x] `components/ui/Card.tsx`
+- [x] `components/ui/Modal.tsx`
+- [x] `components/ui/Toast.tsx`
 
 ### 2.2 레이아웃 컴포넌트
-- [ ] `components/layout/Header.tsx`
-- [ ] `components/layout/Container.tsx`
+- [x] `components/layout/Header.tsx`
+- [x] `components/layout/Container.tsx`
 
 ### 2.3 폼 컴포넌트
-- [ ] `components/forms/KeywordForm.tsx` - 키워드 입력 폼
-- [ ] `components/forms/SettingsForm.tsx` - API 키 설정 폼
-- [ ] `components/forms/PublishSettings.tsx` - 발행 설정 폼
+- [x] `components/forms/KeywordForm.tsx` - 키워드 입력 폼
+- [x] `components/forms/SettingsForm.tsx` - API 키 설정 폼
+- [x] `components/forms/PublishSettings.tsx` - 발행 설정 폼
 
 ### 2.4 진행 상황 컴포넌트
-- [ ] `components/progress/ProgressBar.tsx`
-- [ ] `components/progress/StepIndicator.tsx`
-- [ ] `components/progress/StatusMessage.tsx`
+- [x] `components/progress/ProgressBar.tsx`
+- [x] `components/progress/StepIndicator.tsx`
+- [x] `components/progress/StatusMessage.tsx`
 
 ### 2.5 페이지 구현
-- [x] `app/page.tsx` - 메인 페이지 (키워드 입력 & 실행) - 기본 레이아웃
-- [x] `app/settings/page.tsx` - API 키 설정 페이지 - 기본 레이아웃
+- [x] `app/page.tsx` - 메인 페이지 (컴포넌트 통합 완료)
+- [x] `app/settings/page.tsx` - API 키 설정 페이지 (컴포넌트 통합 완료)
 
 ---
 
@@ -225,7 +225,7 @@ chore: 빌드/설정 등
 | Phase | 상태 | 진행률 |
 |-------|------|--------|
 | Phase 1: 초기 설정 | 완료 | 100% |
-| Phase 2: UI 컴포넌트 | 진행 중 | 15% |
+| Phase 2: UI 컴포넌트 | 완료 | 100% |
 | Phase 3: 스토리지 | 대기 | 0% |
 | Phase 4: API 클라이언트 | 대기 | 0% |
 | Phase 5: SEO/워드프레스 | 대기 | 0% |
