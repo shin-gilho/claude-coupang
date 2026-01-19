@@ -76,34 +76,34 @@
 ## Phase 4: API 클라이언트 개발 (api-integrator)
 
 ### 4.1 쿠팡 파트너스 API
-- [ ] `lib/api/coupang.ts` - API 클라이언트 구현
-- [ ] HMAC 서명 생성 로직
-- [ ] 상품 검색 함수 구현
-- [ ] 에러 핸들링
+- [x] `lib/api/coupang.ts` - API 클라이언트 구현
+- [x] HMAC 서명 생성 로직
+- [x] 상품 검색 함수 구현
+- [x] 에러 핸들링
 
 ### 4.2 Claude API
-- [ ] `lib/api/claude.ts` - API 클라이언트 구현
-- [ ] 블로그 글 생성 함수 구현
-- [ ] 응답 파싱 로직
-- [ ] 에러 핸들링
+- [x] `lib/api/claude.ts` - API 클라이언트 구현
+- [x] 블로그 글 생성 함수 구현
+- [x] 응답 파싱 로직
+- [x] 에러 핸들링
 
 ### 4.3 Gemini API
-- [ ] `lib/api/gemini.ts` - API 클라이언트 구현
-- [ ] 블로그 글 생성 함수 구현
-- [ ] 응답 파싱 로직
-- [ ] 에러 핸들링
+- [x] `lib/api/gemini.ts` - API 클라이언트 구현
+- [x] 블로그 글 생성 함수 구현
+- [x] 응답 파싱 로직
+- [x] 에러 핸들링
 
 ### 4.4 워드프레스 REST API
-- [ ] `lib/api/wordpress.ts` - API 클라이언트 구현
-- [ ] 포스트 생성 함수 구현
-- [ ] 인증 처리 (Basic Auth)
-- [ ] 에러 핸들링
+- [x] `lib/api/wordpress.ts` - API 클라이언트 구현
+- [x] 포스트 생성 함수 구현
+- [x] 인증 처리 (Basic Auth)
+- [x] 에러 핸들링
 
 ### 4.5 API Routes
-- [ ] `app/api/coupang/route.ts` - 쿠팡 API 프록시
-- [ ] `app/api/ai/claude/route.ts` - Claude API 프록시
-- [ ] `app/api/ai/gemini/route.ts` - Gemini API 프록시
-- [ ] `app/api/wordpress/route.ts` - 워드프레스 API 프록시
+- [x] `app/api/coupang/route.ts` - 쿠팡 API 프록시
+- [x] `app/api/ai/claude/route.ts` - Claude API 프록시
+- [x] `app/api/ai/gemini/route.ts` - Gemini API 프록시
+- [x] `app/api/wordpress/route.ts` - 워드프레스 API 프록시
 
 ---
 
@@ -226,8 +226,8 @@ chore: 빌드/설정 등
 |-------|------|--------|
 | Phase 1: 초기 설정 | 완료 | 100% |
 | Phase 2: UI 컴포넌트 | 완료 | 100% |
-| Phase 3: 스토리지 | 대기 | 0% |
-| Phase 4: API 클라이언트 | 대기 | 0% |
+| Phase 3: 스토리지 | 완료 | 100% |
+| Phase 4: API 클라이언트 | 완료 | 100% |
 | Phase 5: SEO/워드프레스 | 대기 | 0% |
 | Phase 6: 워크플로우 | 진행 중 | 10% |
 | Phase 7: 통합/테스트 | 대기 | 0% |

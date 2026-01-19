@@ -15,7 +15,6 @@ export function useLocalStorage<T>(
 ): [T, (value: T | ((prev: T) => T)) => void, () => void] {
   // SSR 대응: 초기값은 initialValue 사용
   const [storedValue, setStoredValue] = useState<T>(initialValue);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // 클라이언트에서 로컬 스토리지 값으로 초기화
   useEffect(() => {
@@ -29,8 +28,6 @@ export function useLocalStorage<T>(
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error);
     }
-
-    setIsInitialized(true);
   }, [key]);
 
   // 값 설정 함수
