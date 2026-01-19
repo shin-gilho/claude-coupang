@@ -10,6 +10,7 @@ export interface CoupangProduct {
   rating: number;
   reviewCount: number;
   isRocket: boolean;
+  isFreeShipping: boolean;
   categoryName: string;
 }
 
@@ -36,5 +37,6 @@ export interface CoupangProductRaw {
   rating?: number;
   reviewCount?: number;
   isRocket?: boolean;
+  isFreeShipping?: boolean;
   categoryName?: string;
 }

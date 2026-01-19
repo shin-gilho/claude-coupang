@@ -108,6 +108,7 @@ function transformProduct(raw: Record<string, unknown>): CoupangProduct {
     rating: Number(raw.rating) || 0,
     reviewCount: Number(raw.reviewCount) || 0,
     isRocket: Boolean(raw.isRocket),
+    isFreeShipping: Boolean(raw.isFreeShipping),
     categoryName: String(raw.categoryName || ""),
   };
 }

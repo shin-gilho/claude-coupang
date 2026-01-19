@@ -110,14 +110,14 @@
 ## Phase 5: SEO 및 워드프레스 연동 (seo-specialist)
 
 ### 5.1 Rank Math SEO 설정
-- [ ] `lib/seo/rankmath.ts` - Rank Math 메타데이터 설정
-- [ ] Focus Keyword 자동 설정 로직
-- [ ] Meta Description 자동 설정 로직
+- [x] `lib/seo/rankmath.ts` - Rank Math 메타데이터 설정
+- [x] Focus Keyword 자동 설정 로직
+- [x] Meta Description 자동 설정 로직
 
 ### 5.2 워드프레스 포스트 최적화
-- [ ] HTML 컨텐츠 정리/최적화
-- [ ] 이미지 URL 처리 (쿠팡 이미지)
-- [ ] 예약 발행 데이터 포맷팅
+- [x] HTML 컨텐츠 정리/최적화
+- [x] 이미지 URL 처리 (쿠팡 이미지)
+- [x] 예약 발행 데이터 포맷팅
 
 ---
 
@@ -228,7 +228,7 @@ chore: 빌드/설정 등
 | Phase 2: UI 컴포넌트 | 완료 | 100% |
 | Phase 3: 스토리지 | 완료 | 100% |
 | Phase 4: API 클라이언트 | 완료 | 100% |
-| Phase 5: SEO/워드프레스 | 대기 | 0% |
+| Phase 5: SEO/워드프레스 | 완료 | 100% |
 | Phase 6: 워크플로우 | 진행 중 | 10% |
 | Phase 7: 통합/테스트 | 대기 | 0% |
 | Phase 8: 배포 | 대기 | 0% |
