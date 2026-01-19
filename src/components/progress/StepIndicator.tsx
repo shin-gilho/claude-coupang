@@ -4,43 +4,39 @@ import { cn } from "@/lib/utils";
 import type { WorkflowStatus } from "@/types";
 
 interface Step {
-  id: WorkflowStatus;
+  id: number;
   label: string;
 }
 
 const steps: Step[] = [
-  { id: "collecting", label: "상품 수집" },
-  { id: "generating", label: "글 작성" },
-  { id: "uploading", label: "업로드" },
-  { id: "completed", label: "완료" },
+  { id: 1, label: "상품 수집" },
+  { id: 2, label: "글 작성" },
+  { id: 3, label: "일정 계산" },
+  { id: 4, label: "발행" },
 ];
 
 interface StepIndicatorProps {
-  currentStatus: WorkflowStatus;
+  currentStep: number;
+  status: WorkflowStatus;
   className?: string;
 }
 
 export default function StepIndicator({
-  currentStatus,
+  currentStep,
+  status,
   className,
 }: StepIndicatorProps) {
-  const getStepState = (stepId: WorkflowStatus): "completed" | "current" | "upcoming" | "error" => {
-    if (currentStatus === "error") {
-      const currentIndex = steps.findIndex((s) => s.id === stepId);
-      const errorIndex = steps.findIndex((s) => s.id === currentStatus);
-      if (currentIndex < errorIndex) return "completed";
-      if (currentIndex === errorIndex) return "error";
-      return "upcoming";
+  const getStepState = (stepId: number): "completed" | "current" | "upcoming" | "error" => {
+    if (status === "error" && stepId === currentStep) {
+      return "error";
     }
 
-    if (currentStatus === "idle") return "upcoming";
+    if (status === "completed") {
+      return "completed";
+    }
 
-    const statusOrder: WorkflowStatus[] = ["collecting", "generating", "uploading", "completed"];
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    const stepIndex = statusOrder.indexOf(stepId);
-
-    if (stepIndex < currentIndex) return "completed";
-    if (stepIndex === currentIndex) return "current";
+    if (stepId < currentStep) return "completed";
+    if (stepId === currentStep) return "current";
     return "upcoming";
   };
 
@@ -74,7 +70,7 @@ export default function StepIndicator({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   ) : (
-                    index + 1
+                    step.id
                   )}
                 </div>
                 <span
@@ -93,8 +89,8 @@ export default function StepIndicator({
               {index < steps.length - 1 && (
                 <div
                   className={cn("flex-1 h-0.5 mx-2", {
-                    "bg-success": getStepState(steps[index + 1].id) !== "upcoming",
-                    "bg-gray-200": getStepState(steps[index + 1].id) === "upcoming",
+                    "bg-success": step.id < currentStep || status === "completed",
+                    "bg-gray-200": step.id >= currentStep && status !== "completed",
                   })}
                 />
               )}

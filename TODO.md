@@ -125,27 +125,26 @@
 
 ### 6.1 프롬프트 설계
 - [x] `constants/prompts.ts` - AI 프롬프트 템플릿
-- [ ] `lib/workflow/prompts.ts` - 프롬프트 빌더 함수
+- [x] 프롬프트 빌더 함수 (constants/prompts.ts에 통합)
 
 ### 6.2 스케줄러 구현
-- [ ] `lib/workflow/scheduler.ts` - 발행 예약 스케줄러
-- [ ] 시간대 계산 로직
-- [ ] 다음 가능 시간 계산
-- [ ] 간격 기반 시간 배정
+- [x] `lib/workflow/scheduler.ts` - 발행 예약 스케줄러
+- [x] 시간대 계산 로직
+- [x] 다음 가능 시간 계산
+- [x] 간격 기반 시간 배정
 
 ### 6.3 오케스트레이터 구현
-- [ ] `lib/workflow/orchestrator.ts` - 메인 워크플로우
-- [ ] 단계별 상태 관리
-- [ ] 에러 발생 시 중단 로직
-- [ ] 진행 상황 업데이트 콜백
+- [x] `lib/workflow/orchestrator.ts` - 메인 워크플로우
+- [x] 단계별 상태 관리
+- [x] 에러 발생 시 중단 로직
+- [x] 진행 상황 업데이트 콜백
 
 ### 6.4 워크플로우 API
-- [ ] `app/api/workflow/route.ts` - 워크플로우 실행 API
-- [ ] 스트리밍 응답 (진행 상황 실시간)
+- [x] 클라이언트에서 직접 API Route 호출 (별도 워크플로우 API 불필요)
 
 ### 6.5 워크플로우 훅
-- [ ] `hooks/useWorkflow.ts` - 워크플로우 실행 훅
-- [ ] `hooks/useProgress.ts` - 진행 상황 관리 훅
+- [x] `hooks/useWorkflow.ts` - 워크플로우 실행 훅
+- [x] `hooks/useProgress.ts` - 진행 상황 관리 훅
 
 ---
 
@@ -229,7 +228,7 @@ chore: 빌드/설정 등
 | Phase 3: 스토리지 | 완료 | 100% |
 | Phase 4: API 클라이언트 | 완료 | 100% |
 | Phase 5: SEO/워드프레스 | 완료 | 100% |
-| Phase 6: 워크플로우 | 진행 중 | 10% |
+| Phase 6: 워크플로우 | 완료 | 100% |
 | Phase 7: 통합/테스트 | 대기 | 0% |
 | Phase 8: 배포 | 대기 | 0% |
 

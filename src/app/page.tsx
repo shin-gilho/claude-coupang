@@ -8,6 +8,17 @@ import { Button, Card, CardTitle, CardContent } from "@/components/ui";
 import { DEFAULT_PUBLISH_SETTINGS } from "@/constants";
 import type { AiModel, PublishSettings as PublishSettingsType, WorkflowState } from "@/types";
 
+/**
+ * UI 표시용 결과 타입
+ */
+interface UIResult {
+  keyword: string;
+  success: boolean;
+  postUrl?: string;
+  scheduledTime?: string;
+  error?: string;
+}
+
 export default function Home() {
   // 키워드 및 AI 모델 상태
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -21,16 +32,15 @@ export default function Home() {
   // 워크플로우 상태
   const [workflowState, setWorkflowState] = useState<WorkflowState>({
     status: "idle",
-    currentKeywordIndex: 0,
-    totalKeywords: 0,
-    currentStep: "",
-    progress: 0,
-    results: [],
+    currentStep: 0,
+    totalSteps: 4,
+    message: "대기 중...",
   });
 
-  const isRunning = workflowState.status !== "idle" &&
-                    workflowState.status !== "completed" &&
-                    workflowState.status !== "error";
+  // UI용 결과 목록
+  const [results, setResults] = useState<UIResult[]>([]);
+
+  const isRunning = workflowState.status === "running";
 
   const handleExecute = async () => {
     if (keywords.length === 0) {
@@ -38,64 +48,71 @@ export default function Home() {
       return;
     }
 
-    // TODO: Phase 3, 4에서 실제 워크플로우 구현
+    setResults([]);
+
+    // TODO: Phase 7에서 실제 워크플로우 연결
     // 현재는 UI 테스트용 시뮬레이션
     setWorkflowState({
-      status: "collecting",
-      currentKeywordIndex: 0,
-      totalKeywords: keywords.length,
-      currentStep: `"${keywords[0]}" 상품 수집 중...`,
-      progress: 10,
-      results: [],
+      status: "running",
+      currentStep: 1,
+      totalSteps: 4,
+      message: `"${keywords[0]}" 상품 수집 중...`,
     });
 
     // 시뮬레이션: 2초 후 다음 단계
     setTimeout(() => {
       setWorkflowState((prev) => ({
         ...prev,
-        status: "generating",
-        currentStep: `"${keywords[0]}" 글 작성 중...`,
-        progress: 40,
+        currentStep: 2,
+        message: `"${keywords[0]}" 글 작성 중...`,
       }));
     }, 2000);
 
     setTimeout(() => {
       setWorkflowState((prev) => ({
         ...prev,
-        status: "uploading",
-        currentStep: `"${keywords[0]}" 업로드 중...`,
-        progress: 70,
+        currentStep: 3,
+        message: `발행 일정 계산 중...`,
       }));
     }, 4000);
 
     setTimeout(() => {
       setWorkflowState((prev) => ({
         ...prev,
-        status: "completed",
-        currentStep: "완료",
-        progress: 100,
-        results: [
-          {
-            keyword: keywords[0],
-            success: true,
-            postUrl: "https://example.com/post/1",
-            scheduledTime: new Date().toISOString(),
-          },
-        ],
+        currentStep: 4,
+        message: `"${keywords[0]}" 업로드 중...`,
       }));
+    }, 5000);
+
+    setTimeout(() => {
+      setWorkflowState({
+        status: "completed",
+        currentStep: 4,
+        totalSteps: 4,
+        message: "완료",
+      });
+      setResults([
+        {
+          keyword: keywords[0],
+          success: true,
+          postUrl: "https://example.com/post/1",
+          scheduledTime: new Date().toISOString(),
+        },
+      ]);
     }, 6000);
   };
 
   const handleReset = () => {
     setWorkflowState({
       status: "idle",
-      currentKeywordIndex: 0,
-      totalKeywords: 0,
-      currentStep: "",
-      progress: 0,
-      results: [],
+      currentStep: 0,
+      totalSteps: 4,
+      message: "대기 중...",
     });
+    setResults([]);
   };
+
+  const progress = Math.round((workflowState.currentStep / workflowState.totalSteps) * 100);
 
   return (
     <div className="min-h-screen">
@@ -145,9 +162,9 @@ export default function Home() {
             <CardContent className="space-y-6">
               {workflowState.status !== "idle" && (
                 <>
-                  <StepIndicator currentStatus={workflowState.status} />
+                  <StepIndicator currentStep={workflowState.currentStep} status={workflowState.status} />
                   <ProgressBar
-                    progress={workflowState.progress}
+                    progress={progress}
                     variant={
                       workflowState.status === "error"
                         ? "error"
@@ -160,20 +177,18 @@ export default function Home() {
               )}
               <StatusMessage
                 status={workflowState.status}
-                currentStep={workflowState.currentStep}
-                currentKeywordIndex={workflowState.currentKeywordIndex}
-                totalKeywords={workflowState.totalKeywords}
+                message={workflowState.message}
                 error={workflowState.error}
               />
 
               {/* 결과 목록 */}
-              {workflowState.results.length > 0 && (
+              {results.length > 0 && (
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-3">
                     처리 결과
                   </h4>
                   <div className="space-y-2">
-                    {workflowState.results.map((result, index) => (
+                    {results.map((result, index) => (
                       <div
                         key={index}
                         className={`flex items-center justify-between p-3 rounded-lg ${

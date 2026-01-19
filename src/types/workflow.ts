@@ -1,35 +1,40 @@
 /**
+ * 워크플로우 상태 타입
+ */
+
+import type { CoupangProduct, BlogPost, WordPressPostResponse } from "./";
+
+/**
  * 워크플로우 상태
  */
 export type WorkflowStatus =
   | "idle"
-  | "collecting" // 쿠팡 상품 수집 중
-  | "generating" // AI 글 작성 중
-  | "uploading" // 워드프레스 업로드 중
-  | "completed" // 완료
-  | "error"; // 에러
+  | "running"
+  | "completed"
+  | "error";
 
 /**
  * 워크플로우 전체 상태
  */
 export interface WorkflowState {
   status: WorkflowStatus;
-  currentKeywordIndex: number;
-  totalKeywords: number;
-  currentStep: string;
-  progress: number; // 0-100
+  currentStep: number;
+  totalSteps: number;
+  message: string;
   error?: string;
-  results: WorkflowResult[];
+  products?: CoupangProduct[];
+  blogPost?: BlogPost;
 }
 
 /**
- * 단일 키워드 처리 결과
+ * 워크플로우 실행 결과
  */
 export interface WorkflowResult {
-  keyword: string;
   success: boolean;
-  postUrl?: string;
-  scheduledTime?: string;
+  products?: CoupangProduct[];
+  blogPost?: BlogPost;
+  wordpressResponse?: WordPressPostResponse;
+  scheduledDate?: Date;
   error?: string;
 }
 
