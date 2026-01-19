@@ -63,13 +63,13 @@
 ## Phase 3: 스토리지 관리 (storage-manager)
 
 ### 3.1 로컬 스토리지 유틸리티
-- [ ] `lib/storage/localStorage.ts` - 로컬 스토리지 CRUD
-- [ ] `lib/storage/encryption.ts` - 암호화 유틸리티 (선택)
-- [ ] `hooks/useLocalStorage.ts` - 로컬 스토리지 훅
+- [x] `lib/storage/localStorage.ts` - 로컬 스토리지 CRUD
+- [ ] `lib/storage/encryption.ts` - 암호화 유틸리티 (선택, 추후 구현)
+- [x] `hooks/useLocalStorage.ts` - 로컬 스토리지 훅
 
 ### 3.2 설정 관리
-- [ ] API 키 저장/불러오기 구현
-- [ ] 발행 설정 저장/불러오기 구현
+- [x] API 키 저장/불러오기 구현
+- [x] 발행 설정 저장/불러오기 구현
 
 ---
 
