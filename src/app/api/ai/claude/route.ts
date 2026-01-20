@@ -2,13 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateBlogPostWithClaude } from "@/lib/api/claude";
 import type { CoupangProduct } from "@/types";
 
+interface PriceRanges {
+  low: { min: number; max: number; count: number };
+  mid: { min: number; max: number; count: number };
+  high: { min: number; max: number; count: number };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { keyword, products, apiKey } = body as {
+    const { keyword, products, apiKey, priceRanges } = body as {
       keyword: string;
       products: CoupangProduct[];
       apiKey: string;
+      priceRanges?: PriceRanges | null;
     };
 
     if (!keyword) {
@@ -42,7 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const blogPost = await generateBlogPostWithClaude(apiKey, keyword, products);
+    const blogPost = await generateBlogPostWithClaude(apiKey, keyword, products, priceRanges);
 
     return NextResponse.json({ success: true, data: blogPost });
   } catch (error) {

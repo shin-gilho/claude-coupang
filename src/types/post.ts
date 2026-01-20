@@ -34,6 +34,7 @@ export interface WordPressPost {
   status: WordPressPostStatus;
   date: string; // ISO 8601 format
   meta: RankMathMeta;
+  featured_media?: number; // 대표 이미지 미디어 ID
 }
 
 /**
@@ -47,4 +48,25 @@ export interface WordPressPostResponse {
   title: {
     rendered: string;
   };
+}
+
+/**
+ * 워드프레스 미디어 업로드 응답
+ */
+export interface WordPressMediaResponse {
+  id: number;
+  source_url: string;
+  title: {
+    rendered: string;
+  };
+  alt_text: string;
+}
+
+/**
+ * 업로드된 이미지 정보
+ */
+export interface UploadedImage {
+  productId: string;
+  mediaId: number;
+  sourceUrl: string;
 }

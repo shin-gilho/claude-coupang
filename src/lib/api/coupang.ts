@@ -10,31 +10,56 @@ import { createApiError } from "@/types";
 const COUPANG_API_BASE = "https://api-gateway.coupang.com";
 
 /**
+ * GMT 날짜 포맷 생성 (yyMMddTHHmmssZ 형식)
+ * 쿠팡 API 공식 가이드에 따른 형식
+ */
+function formatDatetime(): string {
+  const now = new Date();
+  const yy = String(now.getUTCFullYear()).slice(-2);
+  const MM = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(now.getUTCDate()).padStart(2, "0");
+  const HH = String(now.getUTCHours()).padStart(2, "0");
+  const mm = String(now.getUTCMinutes()).padStart(2, "0");
+  const ss = String(now.getUTCSeconds()).padStart(2, "0");
+  return `${yy}${MM}${dd}T${HH}${mm}${ss}Z`;
+}
+
+/**
  * HMAC 서명 생성
+ * 메시지 형식: datetime + method + path + query
  */
 function generateSignature(
   method: string,
   path: string,
+  query: string,
   secretKey: string,
-  timestamp: number
+  datetime: string
 ): string {
-  const message = `${timestamp}${method}${path}`;
+  const message = datetime + method + path + query;
   return crypto.createHmac("sha256", secretKey).update(message).digest("hex");
 }
 
 /**
  * Authorization 헤더 생성
+ * @param method HTTP 메서드 (GET, POST 등)
+ * @param uri 전체 URI (path?query 형태)
+ * @param accessKey 쿠팡 Access Key
+ * @param secretKey 쿠팡 Secret Key
  */
 function generateAuthHeader(
   method: string,
-  path: string,
+  uri: string,
   accessKey: string,
   secretKey: string
 ): string {
-  const timestamp = Date.now();
-  const signature = generateSignature(method, path, secretKey, timestamp);
+  const parts = uri.split("?");
+  const path = parts[0];
+  const query = parts.length > 1 ? parts[1] : "";
 
-  return `CEA algorithm=HmacSHA256, access-key=${accessKey}, signed-date=${timestamp}, signature=${signature}`;
+  const datetime = formatDatetime();
+  const signature = generateSignature(method, path, query, secretKey, datetime);
+
+  return `CEA algorithm=HmacSHA256, access-key=${accessKey}, signed-date=${datetime}, signature=${signature}`;
 }
 
 /**

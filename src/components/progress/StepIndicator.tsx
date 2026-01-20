@@ -9,10 +9,11 @@ interface Step {
 }
 
 const steps: Step[] = [
-  { id: 1, label: "상품 수집" },
-  { id: 2, label: "글 작성" },
-  { id: 3, label: "일정 계산" },
-  { id: 4, label: "발행" },
+  { id: 1, label: "상품 검색" },
+  { id: 2, label: "상품 선별" },
+  { id: 3, label: "글 작성" },
+  { id: 4, label: "이미지 업로드" },
+  { id: 5, label: "발행" },
 ];
 
 interface StepIndicatorProps {

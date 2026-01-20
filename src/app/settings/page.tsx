@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Header, Container } from "@/components/layout";
 import { SettingsForm } from "@/components/forms";
+import { Button, Card, CardTitle, CardContent } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { ConfirmModal } from "@/components/ui/Modal";
 import { STORAGE_KEYS } from "@/constants";
@@ -13,6 +14,12 @@ export default function SettingsPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    message: string;
+    data?: unknown;
+  } | null>(null);
   const { addToast } = useToast();
 
   // 로컬 스토리지에서 API 키 불러오기
@@ -51,6 +58,59 @@ export default function SettingsPage() {
     addToast("info", "설정이 초기화되었습니다.");
   };
 
+  // 워드프레스 테스트
+  const handleWordPressTest = async () => {
+    if (!apiKeys?.wordpress?.url || !apiKeys?.wordpress?.username || !apiKeys?.wordpress?.applicationPassword) {
+      addToast("error", "워드프레스 설정을 먼저 입력해주세요.");
+      return;
+    }
+
+    setIsTesting(true);
+    setTestResult(null);
+
+    try {
+      const response = await fetch("/api/wordpress/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          config: {
+            url: apiKeys.wordpress.url,
+            username: apiKeys.wordpress.username,
+            applicationPassword: apiKeys.wordpress.applicationPassword,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      console.log("워드프레스 테스트 결과:", data);
+
+      if (data.success) {
+        setTestResult({
+          success: true,
+          message: `테스트 성공! 임시글이 생성되었습니다. (ID: ${data.data?.id})`,
+          data: data.data,
+        });
+        addToast("success", "워드프레스 연결 테스트 성공!");
+      } else {
+        setTestResult({
+          success: false,
+          message: data.error?.message || "테스트 실패",
+          data: data.error,
+        });
+        addToast("error", data.error?.message || "워드프레스 테스트 실패");
+      }
+    } catch (error) {
+      console.error("워드프레스 테스트 에러:", error);
+      setTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : "알 수 없는 오류",
+      });
+      addToast("error", "워드프레스 테스트 중 오류 발생");
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   if (!isLoaded) {
     return (
       <div className="min-h-screen">
@@ -78,6 +138,49 @@ export default function SettingsPage() {
             onReset={handleReset}
             isSaving={isSaving}
           />
+
+          {/* 워드프레스 테스트 섹션 */}
+          <Card className="mt-6">
+            <CardTitle>워드프레스 연결 테스트</CardTitle>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                워드프레스에 테스트 글(임시글)을 작성하여 연결 상태를 확인합니다.
+              </p>
+
+              <Button
+                onClick={handleWordPressTest}
+                disabled={isTesting || !apiKeys?.wordpress?.url}
+                isLoading={isTesting}
+                variant="secondary"
+              >
+                {isTesting ? "테스트 중..." : "워드프레스 테스트"}
+              </Button>
+
+              {testResult && (
+                <div
+                  className={`mt-4 p-4 rounded-lg ${
+                    testResult.success
+                      ? "bg-green-50 border border-green-200"
+                      : "bg-red-50 border border-red-200"
+                  }`}
+                >
+                  <p
+                    className={`text-sm font-medium ${
+                      testResult.success ? "text-green-800" : "text-red-800"
+                    }`}
+                  >
+                    {testResult.success ? "✅ " : "❌ "}
+                    {testResult.message}
+                  </p>
+                  {testResult.data != null && (
+                    <pre className="mt-2 text-xs text-gray-600 overflow-auto max-h-32">
+                      {JSON.stringify(testResult.data, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </Container>
       </main>
 

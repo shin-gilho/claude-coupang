@@ -98,7 +98,7 @@ export default function Home() {
     try {
       const workflowResult = await run({
         keyword: keywords[0], // 첫 번째 키워드로 실행
-        productCount: 5,
+        productCount: 10,
         aiModel,
         apiKeys: apiKeys!,
         publishSettings,

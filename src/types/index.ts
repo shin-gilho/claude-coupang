@@ -22,6 +22,8 @@ export type {
   RankMathMeta,
   WordPressPost,
   WordPressPostResponse,
+  WordPressMediaResponse,
+  UploadedImage,
 } from "./post";
 
 // Workflow
