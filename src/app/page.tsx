@@ -7,7 +7,7 @@ import { KeywordForm, PublishSettings } from "@/components/forms";
 import { ProgressBar, StepIndicator, StatusMessage } from "@/components/progress";
 import { Button, Card, CardTitle, CardContent } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
-import { DEFAULT_PUBLISH_SETTINGS, STORAGE_KEYS } from "@/constants";
+import { DEFAULT_PUBLISH_SETTINGS, STORAGE_KEYS, PRODUCT_SEARCH_SETTINGS } from "@/constants";
 import { useWorkflow } from "@/hooks";
 import type { AiModel, PublishSettings as PublishSettingsType, ApiKeys } from "@/types";
 
@@ -98,7 +98,7 @@ export default function Home() {
     try {
       const workflowResult = await run({
         keyword: keywords[0], // 첫 번째 키워드로 실행
-        productCount: 10,
+        productCount: PRODUCT_SEARCH_SETTINGS.LIMIT,
         aiModel,
         apiKeys: apiKeys!,
         publishSettings,

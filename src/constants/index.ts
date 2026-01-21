@@ -9,5 +9,9 @@ export {
 export {
   BLOG_POST_SYSTEM_PROMPT,
   BLOG_POST_USER_PROMPT,
+  BLOG_POST_PART1_PROMPT,
+  BLOG_POST_PART2_PROMPT,
   buildBlogPostPrompt,
+  buildPart1Prompt,
+  buildPart2Prompt,
 } from "./prompts";

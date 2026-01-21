@@ -6,7 +6,17 @@
       "Bash(npm install:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "WebFetch(domain:developers.coupangcorps.com)",
+      "WebSearch",
+      "WebFetch(domain:developers.coupangcorp.com)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next lint:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:developer.wordpress.org)",
+      "Bash(git push:*)",
+      "Bash(git remote add:*)",
+      "Bash(ls:*)"
     ]
   }
 }

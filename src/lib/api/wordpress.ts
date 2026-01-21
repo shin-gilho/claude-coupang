@@ -11,8 +11,15 @@ import type {
   UploadedImage,
   BlogPost,
   CoupangProduct,
+  ImageUploadError,
+  ImageUploadErrorCode,
+  ImageUploadResult,
 } from "@/types";
 import { createApiError } from "@/types";
+import {
+  IMAGE_UPLOAD_SETTINGS,
+  COUPANG_IMAGE_HEADERS,
+} from "@/constants/config";
 
 /**
  * Basic Auth 헤더 생성
@@ -131,26 +138,115 @@ export async function testWordPressConnection(
 }
 
 /**
- * 외부 이미지 URL에서 이미지 데이터 가져오기
+ * 이미지 버퍼의 유효성 검사 (magic bytes 체크)
  */
-async function fetchImageAsBuffer(imageUrl: string): Promise<{
+function validateImageBuffer(buffer: Buffer): { valid: boolean; detectedType: string | null } {
+  if (buffer.length < 4) {
+    return { valid: false, detectedType: null };
+  }
+
+  const bytes = Array.from(buffer.subarray(0, 12));
+  const { MAGIC_BYTES } = IMAGE_UPLOAD_SETTINGS;
+
+  // JPEG 체크
+  if (
+    bytes[0] === MAGIC_BYTES.JPEG[0] &&
+    bytes[1] === MAGIC_BYTES.JPEG[1] &&
+    bytes[2] === MAGIC_BYTES.JPEG[2]
+  ) {
+    return { valid: true, detectedType: "image/jpeg" };
+  }
+
+  // PNG 체크
+  if (
+    bytes[0] === MAGIC_BYTES.PNG[0] &&
+    bytes[1] === MAGIC_BYTES.PNG[1] &&
+    bytes[2] === MAGIC_BYTES.PNG[2] &&
+    bytes[3] === MAGIC_BYTES.PNG[3]
+  ) {
+    return { valid: true, detectedType: "image/png" };
+  }
+
+  // GIF 체크
+  if (
+    bytes[0] === MAGIC_BYTES.GIF[0] &&
+    bytes[1] === MAGIC_BYTES.GIF[1] &&
+    bytes[2] === MAGIC_BYTES.GIF[2]
+  ) {
+    return { valid: true, detectedType: "image/gif" };
+  }
+
+  // WebP 체크 (RIFF....WEBP)
+  if (
+    bytes[0] === MAGIC_BYTES.WEBP_RIFF[0] &&
+    bytes[1] === MAGIC_BYTES.WEBP_RIFF[1] &&
+    bytes[2] === MAGIC_BYTES.WEBP_RIFF[2] &&
+    bytes[3] === MAGIC_BYTES.WEBP_RIFF[3] &&
+    bytes[8] === 0x57 && // W
+    bytes[9] === 0x45 && // E
+    bytes[10] === 0x42 && // B
+    bytes[11] === 0x50    // P
+  ) {
+    return { valid: true, detectedType: "image/webp" };
+  }
+
+  return { valid: false, detectedType: null };
+}
+
+/**
+ * 지연 함수 (지수 백오프용)
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 외부 이미지 URL에서 이미지 데이터 가져오기 (재시도 로직 포함)
+ */
+async function fetchImageAsBuffer(
+  imageUrl: string,
+  retryCount = 0
+): Promise<{
   buffer: Buffer;
   contentType: string;
 }> {
-  const response = await axios.get(imageUrl, {
-    responseType: "arraybuffer",
-    timeout: 30000,
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    },
-  });
+  const { MAX_RETRIES, INITIAL_RETRY_DELAY_MS, FETCH_TIMEOUT_MS } = IMAGE_UPLOAD_SETTINGS;
 
-  const contentType = response.headers["content-type"] || "image/jpeg";
-  return {
-    buffer: Buffer.from(response.data),
-    contentType,
-  };
+  try {
+    const response = await axios.get(imageUrl, {
+      responseType: "arraybuffer",
+      timeout: FETCH_TIMEOUT_MS,
+      headers: COUPANG_IMAGE_HEADERS,
+      // 리다이렉트 허용
+      maxRedirects: 5,
+    });
+
+    const buffer = Buffer.from(response.data);
+
+    // 이미지 유효성 검사
+    const validation = validateImageBuffer(buffer);
+    if (!validation.valid) {
+      throw new Error("유효하지 않은 이미지 데이터입니다.");
+    }
+
+    // Content-Type이 없거나 잘못된 경우 감지된 타입 사용
+    const contentType = validation.detectedType ||
+      response.headers["content-type"] ||
+      "image/jpeg";
+
+    return { buffer, contentType };
+  } catch (error) {
+    // 재시도 가능한 경우
+    if (retryCount < MAX_RETRIES) {
+      const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
+      console.log(`Image fetch failed, retrying in ${delayMs}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+      await delay(delayMs);
+      return fetchImageAsBuffer(imageUrl, retryCount + 1);
+    }
+
+    // 최대 재시도 횟수 초과
+    throw error;
+  }
 }
 
 /**
@@ -179,6 +275,7 @@ function generateImageFilename(
 
 /**
  * 단일 이미지를 워드프레스에 업로드
+ * 이미지 압축은 API Route에서 별도로 처리해야 합니다.
  */
 export async function uploadImageToWordPress(
   config: WordPressConfig,
@@ -244,15 +341,40 @@ export async function uploadImageToWordPress(
 }
 
 /**
+ * 에러에서 에러 코드 추출
+ */
+function getErrorCode(error: unknown): ImageUploadErrorCode {
+  if (axios.isAxiosError(error)) {
+    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+      return "TIMEOUT";
+    }
+    if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
+      return "NETWORK_ERROR";
+    }
+    if (error.response?.status) {
+      return "UPLOAD_FAILED";
+    }
+    return "FETCH_FAILED";
+  }
+  if (error instanceof Error && error.message.includes("유효하지 않은 이미지")) {
+    return "INVALID_IMAGE";
+  }
+  return "FETCH_FAILED";
+}
+
+/**
  * 전체 상품 이미지를 워드프레스에 업로드
  * 첫 번째 이미지는 Featured Image로 사용
+ * 실패한 이미지에 대한 상세 에러 정보도 반환
  */
 export async function uploadProductImages(
   config: WordPressConfig,
   products: CoupangProduct[]
-): Promise<{ featuredMediaId: number | null; uploadedImages: UploadedImage[] }> {
+): Promise<ImageUploadResult> {
   const uploadedImages: UploadedImage[] = [];
+  const failedImages: ImageUploadError[] = [];
   let featuredMediaId: number | null = null;
+  const { UPLOAD_DELAY_MS, MAX_RETRIES } = IMAGE_UPLOAD_SETTINGS;
 
   for (let i = 0; i < products.length; i++) {
     const product = products[i];
@@ -274,31 +396,45 @@ export async function uploadProductImages(
         sourceUrl: result.source_url,
       });
 
-      // 첫 번째 이미지를 Featured Image로 설정
-      if (i === 0) {
+      // 첫 번째 성공 이미지를 Featured Image로 설정
+      if (featuredMediaId === null) {
         featuredMediaId = result.id;
       }
 
       // 요청 간 딜레이 (API 부하 방지)
       if (i < products.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await delay(UPLOAD_DELAY_MS);
       }
     } catch (error) {
+      const errorCode = getErrorCode(error);
+      const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
+
       // 상세 에러 로깅
-      if (axios.isAxiosError(error)) {
-        console.error(`Failed to upload image for product ${product.productId}:`, {
-          status: error.response?.status,
-          message: error.response?.data?.message || error.message,
-          imageUrl: product.productImage.substring(0, 100) + '...',
-        });
-      } else {
-        console.error(`Failed to upload image for product ${product.productId}:`, error);
-      }
-      // 개별 이미지 업로드 실패 시 계속 진행
+      console.error(`Failed to upload image for product ${product.productId}:`, {
+        errorCode,
+        errorMessage,
+        imageUrl: product.productImage.substring(0, 100) + "...",
+      });
+
+      // 실패 정보 기록
+      failedImages.push({
+        productId: product.productId,
+        imageUrl: product.productImage,
+        errorCode,
+        errorMessage,
+        retryCount: MAX_RETRIES,
+      });
     }
   }
 
-  return { featuredMediaId, uploadedImages };
+  return {
+    featuredMediaId,
+    uploadedImages,
+    failedImages,
+    totalCount: products.length,
+    successCount: uploadedImages.length,
+    failedCount: failedImages.length,
+  };
 }
 
 /**
@@ -330,6 +466,110 @@ export function replaceImageUrls(
  */
 function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * 콘텐츠에서 업로드 실패한 이미지의 img 태그 제거
+ * 외부 URL을 사용하는 이미지를 제거하여 핫링크 문제 방지
+ */
+export function removeFailedImageTags(
+  content: string,
+  products: CoupangProduct[],
+  uploadedImages: UploadedImage[]
+): string {
+  let updatedContent = content;
+  const uploadedProductIds = new Set(uploadedImages.map((img) => img.productId));
+
+  for (const product of products) {
+    // 이미 업로드 성공한 이미지는 건너뛰기
+    if (uploadedProductIds.has(product.productId)) {
+      continue;
+    }
+
+    // 이 상품의 이미지를 포함하는 img 태그 제거
+    const imageUrl = escapeRegExp(product.productImage);
+
+    // <img ... src="이미지URL" ... /> 형태 제거
+    const imgTagRegex = new RegExp(
+      `<img[^>]*src=["']${imageUrl}["'][^>]*\\/?>`,
+      "gi"
+    );
+    updatedContent = updatedContent.replace(imgTagRegex, "");
+
+    // <figure>...</figure> 내 img 태그도 제거 (figure 전체 제거)
+    const figureRegex = new RegExp(
+      `<figure[^>]*>[\\s\\S]*?<img[^>]*src=["']${imageUrl}["'][^>]*\\/?>[\\s\\S]*?<\\/figure>`,
+      "gi"
+    );
+    updatedContent = updatedContent.replace(figureRegex, "");
+  }
+
+  // 빈 p 태그 정리 (이미지 제거 후 남은 빈 태그)
+  updatedContent = updatedContent.replace(/<p>\s*<\/p>/gi, "");
+
+  return updatedContent;
+}
+
+/**
+ * 상품 테이블에서 업로드 실패한 이미지 셀 처리
+ * 이미지 셀을 제거하거나 텍스트로 대체
+ */
+export function removeFailedImagesFromTable(
+  content: string,
+  products: CoupangProduct[],
+  uploadedImages: UploadedImage[]
+): string {
+  let updatedContent = content;
+  const uploadedProductIds = new Set(uploadedImages.map((img) => img.productId));
+
+  for (const product of products) {
+    // 이미 업로드 성공한 이미지는 건너뛰기
+    if (uploadedProductIds.has(product.productId)) {
+      continue;
+    }
+
+    const imageUrl = escapeRegExp(product.productImage);
+
+    // 테이블 내 이미지 셀을 "이미지 없음" 텍스트로 대체
+    const tableCellWithImgRegex = new RegExp(
+      `<td[^>]*>[\\s\\S]*?<img[^>]*src=["']${imageUrl}["'][^>]*\\/?>\\s*<\\/td>`,
+      "gi"
+    );
+    updatedContent = updatedContent.replace(
+      tableCellWithImgRegex,
+      '<td style="padding:12px;text-align:center;vertical-align:middle;border-bottom:1px solid #eee;color:#999;">-</td>'
+    );
+  }
+
+  return updatedContent;
+}
+
+/**
+ * 모든 외부 이미지 태그 제거 (업로드되지 않은 모든 외부 이미지)
+ * 워드프레스에서 핫링크 방지로 표시되지 않는 문제 해결
+ */
+export function removeAllExternalImages(content: string): string {
+  let updatedContent = content;
+
+  // coupang.com 도메인 이미지 태그 제거
+  const coupangImgRegex = /<img[^>]*src=["'][^"']*coupang\.com[^"']*["'][^>]*\/?>/gi;
+  updatedContent = updatedContent.replace(coupangImgRegex, "");
+
+  // figure 내 coupang 이미지도 제거
+  const coupangFigureRegex = /<figure[^>]*>[\s\S]*?<img[^>]*src=["'][^"']*coupang\.com[^"']*["'][^>]*\/?>[\s\S]*?<\/figure>/gi;
+  updatedContent = updatedContent.replace(coupangFigureRegex, "");
+
+  // 테이블 내 coupang 이미지 셀 처리
+  const coupangTableCellRegex = /<td[^>]*>[\s\S]*?<img[^>]*src=["'][^"']*coupang\.com[^"']*["'][^>]*\/?>[\s\S]*?<\/td>/gi;
+  updatedContent = updatedContent.replace(
+    coupangTableCellRegex,
+    '<td style="padding:12px;text-align:center;vertical-align:middle;border-bottom:1px solid #eee;color:#999;">-</td>'
+  );
+
+  // 빈 p 태그 정리
+  updatedContent = updatedContent.replace(/<p>\s*<\/p>/gi, "");
+
+  return updatedContent;
 }
 
 /**
@@ -365,7 +605,7 @@ export class WordPressApiClient {
 
   async uploadProductImages(
     products: CoupangProduct[]
-  ): Promise<{ featuredMediaId: number | null; uploadedImages: UploadedImage[] }> {
+  ): Promise<ImageUploadResult> {
     return uploadProductImages(this.config, products);
   }
 

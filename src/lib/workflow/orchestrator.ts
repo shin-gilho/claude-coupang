@@ -12,8 +12,8 @@ import type {
   BlogPost,
   WordPressPostResponse,
   AiModel,
-  UploadedImage,
 } from "@/types";
+import { removeAllExternalImages } from "@/lib/api/wordpress";
 import { generateScheduleSlots } from "./scheduler";
 import { selectProducts, calculatePriceRanges } from "@/lib/product";
 
@@ -73,7 +73,8 @@ function updateState(
  * 상품 테이블 HTML 생성
  */
 function generateProductTable(products: CoupangProduct[]): string {
-  const rows = products.map((p, i) => `
+  const rows = products.map((p, i) => {
+    return `
     <tr>
       <td style="padding:12px;text-align:center;vertical-align:middle;border-bottom:1px solid #eee;">
         <img src="${p.productImage}" alt="${p.productName}" style="width:80px;height:80px;object-fit:contain;" />
@@ -86,10 +87,11 @@ function generateProductTable(products: CoupangProduct[]): string {
         ${p.productPrice.toLocaleString()}원
       </td>
       <td style="padding:12px;text-align:center;vertical-align:middle;border-bottom:1px solid #eee;">
-        <a href="${p.productUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#ff5722;color:white;padding:8px 16px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:13px;">쿠팡에서 보기</a>
+        <a href="${p.productUrl}" style="display:inline-block;padding:10px 20px;background-color:#e53935;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:14px;" target="_blank" rel="noopener noreferrer">쿠팡에서 보기</a>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   return `
 <h2 style="margin-top:40px;margin-bottom:20px;font-size:24px;border-bottom:2px solid #333;padding-bottom:10px;">📦 추천 상품 보러가기</h2>
@@ -98,7 +100,6 @@ function generateProductTable(products: CoupangProduct[]): string {
     ${rows}
   </tbody>
 </table>
-<p style="font-size:12px;color:#888;margin-top:10px;">※ 이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
 `;
 }
 
@@ -171,17 +172,27 @@ async function generateBlogPost(
 }
 
 /**
+ * 이미지 업로드 결과 타입
+ */
+interface ImageUploadApiResult {
+  featuredMediaId: number | null;
+  updatedContent: string;
+  stats: {
+    total: number;
+    success: number;
+    failed: number;
+  };
+  warning?: string;
+}
+
+/**
  * 이미지 업로드 API 호출
  */
 async function uploadImages(
   products: CoupangProduct[],
   content: string,
   apiKeys: ApiKeys
-): Promise<{
-  featuredMediaId: number | null;
-  uploadedImages: UploadedImage[];
-  updatedContent: string;
-}> {
+): Promise<ImageUploadApiResult> {
   const response = await fetch("/api/wordpress/media", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -204,13 +215,15 @@ async function uploadImages(
   const result = await response.json();
   return {
     featuredMediaId: result.data.featuredMediaId,
-    uploadedImages: result.data.uploadedImages,
     updatedContent: result.data.updatedContent || content,
+    stats: result.data.stats || { total: products.length, success: 0, failed: 0 },
+    warning: result.warning,
   };
 }
 
 /**
  * 워드프레스 발행 API 호출
+ * TODO: 테스트 완료 후 status를 "future"로 변경
  */
 async function publishToWordPress(
   blogPost: BlogPost,
@@ -221,7 +234,7 @@ async function publishToWordPress(
   const postData: Record<string, unknown> = {
     title: blogPost.title,
     content: blogPost.content,
-    status: "future",
+    status: "draft", // 테스트용 임시저장 (원래: "future")
     date: scheduledDate.toISOString(),
     meta: {
       rank_math_focus_keyword: blogPost.focusKeyword,
@@ -357,16 +370,30 @@ export async function executeWorkflow(
       featuredMediaId = uploadResult.featuredMediaId;
       finalContent = uploadResult.updatedContent;
 
-      notify({
-        currentStep: 4,
-        message: `${uploadResult.uploadedImages.length}개의 이미지를 업로드했습니다.`,
-      });
+      // 업로드 결과 메시지
+      const { stats, warning } = uploadResult;
+      if (warning) {
+        // 일부 또는 전체 실패 시 경고 메시지 표시
+        notify({
+          currentStep: 4,
+          message: `이미지 업로드: ${stats.success}/${stats.total}개 성공. ${warning}`,
+        });
+      } else {
+        notify({
+          currentStep: 4,
+          message: `${stats.success}개의 이미지를 업로드했습니다.`,
+        });
+      }
     } catch (uploadError) {
-      // 이미지 업로드 실패 시에도 계속 진행 (원본 이미지 URL 사용)
-      console.error("Image upload failed, continuing with original URLs:", uploadError);
+      // 이미지 업로드 API 자체 실패 시 외부 이미지 제거 후 진행
+      console.error("Image upload API failed:", uploadError);
+
+      // 쿠팡 외부 이미지 태그 모두 제거 (핫링크 방지 문제 방지)
+      finalContent = removeAllExternalImages(blogPostWithTable.content);
+
       notify({
         currentStep: 4,
-        message: "이미지 업로드에 실패했습니다. 원본 이미지 URL로 진행합니다.",
+        message: "이미지 업로드에 실패했습니다. 이미지 없이 발행을 진행합니다.",
       });
     }
 

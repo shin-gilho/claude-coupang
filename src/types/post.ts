@@ -70,3 +70,49 @@ export interface UploadedImage {
   mediaId: number;
   sourceUrl: string;
 }
+
+/**
+ * 이미지 업로드 에러 정보
+ */
+export interface ImageUploadError {
+  productId: string;
+  imageUrl: string;
+  errorCode: ImageUploadErrorCode;
+  errorMessage: string;
+  retryCount: number;
+}
+
+/**
+ * 이미지 업로드 에러 코드
+ */
+export type ImageUploadErrorCode =
+  | "FETCH_FAILED"         // 이미지 다운로드 실패
+  | "INVALID_IMAGE"        // 유효하지 않은 이미지 데이터
+  | "UPLOAD_FAILED"        // 워드프레스 업로드 실패
+  | "TIMEOUT"              // 타임아웃
+  | "NETWORK_ERROR";       // 네트워크 에러
+
+/**
+ * 이미지 업로드 결과 (통계 포함)
+ */
+export interface ImageUploadResult {
+  featuredMediaId: number | null;
+  uploadedImages: UploadedImage[];
+  failedImages: ImageUploadError[];
+  totalCount: number;
+  successCount: number;
+  failedCount: number;
+}
+
+/**
+ * 이미지 압축 결과
+ */
+export interface ImageCompressionResult {
+  buffer: Buffer;
+  format: string;         // "webp" | "jpeg" | "png"
+  contentType: string;    // MIME type (예: "image/webp")
+  originalSize: number;   // 원본 크기 (bytes)
+  compressedSize: number; // 압축 후 크기 (bytes)
+  width: number;          // 결과 너비
+  height: number;         // 결과 높이
+}

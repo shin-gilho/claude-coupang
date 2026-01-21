@@ -23,7 +23,7 @@ export interface ProductSelectionOptions {
  * 기본 선별 옵션
  */
 export const DEFAULT_SELECTION_OPTIONS: ProductSelectionOptions = {
-  targetCount: 10,
+  targetCount: 7,
   minRating: 4.0,
   fallbackMinRating: 3.5,
   priceDistribution: {

@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
         rating: 4.5,
         reviewCount: 1234,
         isRocket: true,
+        isFreeShipping: true,
         categoryName: "이어폰",
       },
       {
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
         rating: 4.3,
         reviewCount: 567,
         isRocket: true,
+        isFreeShipping: true,
         categoryName: "헤드폰",
       },
       {
@@ -71,6 +73,7 @@ export async function POST(request: NextRequest) {
         rating: 4.1,
         reviewCount: 890,
         isRocket: false,
+        isFreeShipping: false,
         categoryName: "이어폰",
       },
     ];

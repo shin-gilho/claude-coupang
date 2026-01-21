@@ -24,6 +24,10 @@ export type {
   WordPressPostResponse,
   WordPressMediaResponse,
   UploadedImage,
+  ImageUploadError,
+  ImageUploadErrorCode,
+  ImageUploadResult,
+  ImageCompressionResult,
 } from "./post";
 
 // Workflow
