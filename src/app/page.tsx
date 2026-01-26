@@ -7,9 +7,9 @@ import { KeywordForm, PublishSettings } from "@/components/forms";
 import { ProgressBar, StepIndicator, StatusMessage } from "@/components/progress";
 import { Button, Card, CardTitle, CardContent } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
-import { DEFAULT_PUBLISH_SETTINGS, STORAGE_KEYS, PRODUCT_SEARCH_SETTINGS } from "@/constants";
+import { DEFAULT_PUBLISH_SETTINGS, STORAGE_KEYS, PRODUCT_SEARCH_SETTINGS, AI_MODEL_SETTINGS } from "@/constants";
 import { useWorkflow } from "@/hooks";
-import type { AiModel, PublishSettings as PublishSettingsType, ApiKeys } from "@/types";
+import type { AiModel, AiModelVersion, PublishSettings as PublishSettingsType, ApiKeys } from "@/types";
 
 export default function Home() {
   const router = useRouter();
@@ -18,6 +18,18 @@ export default function Home() {
   // 키워드 및 AI 모델 상태
   const [keywords, setKeywords] = useState<string[]>([]);
   const [aiModel, setAiModel] = useState<AiModel>("claude");
+  const [modelVersion, setModelVersion] = useState<AiModelVersion>(
+    AI_MODEL_SETTINGS.CLAUDE.defaultModel as AiModelVersion
+  );
+
+  // AI 모델 변경 시 기본 모델 버전으로 초기화
+  const handleAiModelChange = (model: AiModel) => {
+    setAiModel(model);
+    const defaultModel = model === "claude"
+      ? AI_MODEL_SETTINGS.CLAUDE.defaultModel
+      : AI_MODEL_SETTINGS.GEMINI.defaultModel;
+    setModelVersion(defaultModel as AiModelVersion);
+  };
 
   // 발행 설정 상태
   const [publishSettings, setPublishSettings] = useState<PublishSettingsType>(
@@ -100,6 +112,7 @@ export default function Home() {
         keyword: keywords[0], // 첫 번째 키워드로 실행
         productCount: PRODUCT_SEARCH_SETTINGS.LIMIT,
         aiModel,
+        modelVersion,
         apiKeys: apiKeys!,
         publishSettings,
       });
@@ -175,7 +188,9 @@ export default function Home() {
               keywords={keywords}
               onKeywordsChange={setKeywords}
               aiModel={aiModel}
-              onAiModelChange={setAiModel}
+              onAiModelChange={handleAiModelChange}
+              modelVersion={modelVersion}
+              onModelVersionChange={setModelVersion}
               disabled={isRunning}
             />
 

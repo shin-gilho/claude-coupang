@@ -35,10 +35,32 @@ export interface PublishSettings {
 export type AiModel = "claude" | "gemini";
 
 /**
+ * Claude 모델 버전
+ */
+export type ClaudeModel =
+  | "claude-sonnet-4-20250514"
+  | "claude-opus-4-20250514"
+  | "claude-haiku-3-5-20250620";
+
+/**
+ * Gemini 모델 버전
+ */
+export type GeminiModel =
+  | "gemini-2.5-flash"
+  | "gemini-2.5-pro"
+  | "gemini-2.5-flash-lite";
+
+/**
+ * AI 모델 버전 (Claude 또는 Gemini)
+ */
+export type AiModelVersion = ClaudeModel | GeminiModel;
+
+/**
  * 워크플로우 실행 설정
  */
 export interface WorkflowExecutionConfig {
   keywords: string[];
   aiModel: AiModel;
+  aiModelVersion: AiModelVersion;
   publishSettings: PublishSettings;
 }

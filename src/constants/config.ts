@@ -29,14 +29,28 @@ export const PRODUCT_SEARCH_SETTINGS = {
   SORT_BY: "RATING", // 평점순
 } as const;
 
+// AI 모델 옵션
+export const AI_MODEL_OPTIONS = {
+  CLAUDE: [
+    { value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4 (권장)", description: "균형 잡힌 성능" },
+    { value: "claude-opus-4-20250514", label: "Claude Opus 4", description: "최고 품질" },
+    { value: "claude-haiku-3-5-20250620", label: "Claude Haiku 3.5", description: "빠른 응답" },
+  ],
+  GEMINI: [
+    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (권장)", description: "빠른 속도" },
+    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro", description: "최고 품질" },
+    { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", description: "비용 효율" },
+  ],
+} as const;
+
 // AI 모델 설정
 export const AI_MODEL_SETTINGS = {
   CLAUDE: {
-    model: "claude-sonnet-4-20250514",
+    defaultModel: "claude-sonnet-4-20250514",
     maxTokens: 4096,
   },
   GEMINI: {
-    model: "gemini-1.5-pro",
+    defaultModel: "gemini-2.5-flash",
     maxTokens: 4096,
   },
 } as const;

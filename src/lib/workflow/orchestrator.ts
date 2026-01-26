@@ -12,6 +12,7 @@ import type {
   BlogPost,
   WordPressPostResponse,
   AiModel,
+  AiModelVersion,
 } from "@/types";
 import { removeAllExternalImages } from "@/lib/api/wordpress";
 import { generateScheduleSlots } from "./scheduler";
@@ -42,6 +43,7 @@ export interface WorkflowConfig {
   keyword: string;
   productCount: number;
   aiModel: AiModel;
+  modelVersion: AiModelVersion;
   apiKeys: ApiKeys;
   publishSettings: PublishSettings;
   onProgress?: WorkflowProgressCallback;
@@ -140,7 +142,8 @@ async function searchProducts(
 async function generateBlogPost(
   keyword: string,
   products: CoupangProduct[],
-  model: AiModel,
+  aiModel: AiModel,
+  modelVersion: AiModelVersion,
   apiKeys: ApiKeys,
   priceRanges?: {
     low: { min: number; max: number; count: number };
@@ -148,8 +151,8 @@ async function generateBlogPost(
     high: { min: number; max: number; count: number };
   } | null
 ): Promise<BlogPost> {
-  const endpoint = model === "claude" ? "/api/ai/claude" : "/api/ai/gemini";
-  const apiKey = model === "claude" ? apiKeys.claude : apiKeys.gemini;
+  const endpoint = aiModel === "claude" ? "/api/ai/claude" : "/api/ai/gemini";
+  const apiKey = aiModel === "claude" ? apiKeys.claude : apiKeys.gemini;
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -159,6 +162,7 @@ async function generateBlogPost(
       products,
       apiKey,
       priceRanges,
+      model: modelVersion,
     }),
   });
 
@@ -274,7 +278,7 @@ async function publishToWordPress(
 export async function executeWorkflow(
   config: WorkflowConfig
 ): Promise<WorkflowResult> {
-  const { keyword, productCount, aiModel, apiKeys, publishSettings, onProgress } =
+  const { keyword, productCount, aiModel, modelVersion, apiKeys, publishSettings, onProgress } =
     config;
 
   let state = createInitialState();
@@ -328,13 +332,14 @@ export async function executeWorkflow(
     // 단계 3: AI 블로그 글 생성
     notify({
       currentStep: 3,
-      message: `${aiModel === "claude" ? "Claude" : "Gemini"}로 블로그 글을 생성 중입니다...`,
+      message: `${aiModel === "claude" ? "Claude" : "Gemini"} (${modelVersion})로 블로그 글을 생성 중입니다...`,
     });
 
     const blogPost = await generateBlogPost(
       keyword,
       selectedProducts,
       aiModel,
+      modelVersion,
       apiKeys,
       priceRanges
     );

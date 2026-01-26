@@ -2,23 +2,28 @@
 
 import { useState } from "react";
 import { Card, CardTitle, CardContent } from "@/components/ui/Card";
-import { Textarea } from "@/components/ui";
+import { Textarea, Select } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import type { AiModel } from "@/types";
+import { AI_MODEL_OPTIONS } from "@/constants";
+import type { AiModel, AiModelVersion } from "@/types";
 
 interface KeywordFormProps {
   onKeywordsChange: (keywords: string[]) => void;
   onAiModelChange: (model: AiModel) => void;
+  onModelVersionChange: (version: AiModelVersion) => void;
   keywords: string[];
   aiModel: AiModel;
+  modelVersion: AiModelVersion;
   disabled?: boolean;
 }
 
 export default function KeywordForm({
   onKeywordsChange,
   onAiModelChange,
+  onModelVersionChange,
   keywords,
   aiModel,
+  modelVersion,
   disabled = false,
 }: KeywordFormProps) {
   const [keywordText, setKeywordText] = useState(keywords.join("\n"));
@@ -33,6 +38,15 @@ export default function KeywordForm({
   };
 
   const keywordCount = keywords.length;
+
+  // 현재 선택된 AI 제공자에 맞는 모델 옵션 가져오기
+  const modelOptions = aiModel === "claude"
+    ? AI_MODEL_OPTIONS.CLAUDE
+    : AI_MODEL_OPTIONS.GEMINI;
+
+  // 현재 선택된 모델의 설명 가져오기
+  const selectedModelOption = modelOptions.find(opt => opt.value === modelVersion);
+  const modelDescription = selectedModelOption?.description || "";
 
   return (
     <Card>
@@ -102,6 +116,20 @@ export default function KeywordForm({
               <span className="ml-2 text-sm text-gray-700">Gemini</span>
             </label>
           </div>
+        </div>
+
+        <div>
+          <Select
+            label="모델 버전"
+            value={modelVersion}
+            onChange={(e) => onModelVersionChange(e.target.value as AiModelVersion)}
+            disabled={disabled}
+            options={modelOptions.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+            hint={modelDescription}
+          />
         </div>
       </CardContent>
     </Card>

@@ -11,11 +11,12 @@ interface PriceRanges {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { keyword, products, apiKey, priceRanges } = body as {
+    const { keyword, products, apiKey, priceRanges, model } = body as {
       keyword: string;
       products: CoupangProduct[];
       apiKey: string;
       priceRanges?: PriceRanges | null;
+      model?: string;
     };
 
     if (!keyword) {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const blogPost = await generateBlogPostWithClaude(apiKey, keyword, products, priceRanges);
+    const blogPost = await generateBlogPostWithClaude(apiKey, keyword, products, priceRanges, model);
 
     return NextResponse.json({ success: true, data: blogPost });
   } catch (error) {

@@ -35,7 +35,8 @@ export async function generateBlogPostWithClaude(
   apiKey: string,
   keyword: string,
   products: CoupangProduct[],
-  priceRanges?: PriceRanges | null
+  priceRanges?: PriceRanges | null,
+  modelVersion: string = "claude-sonnet-4-20250514"
 ): Promise<BlogPost> {
   const client = new Anthropic({ apiKey });
 
@@ -43,7 +44,7 @@ export async function generateBlogPostWithClaude(
     // 상품이 4개 초과면 분할 호출로 콘텐츠 잘림 방지
     if (products.length > 4) {
       console.log(`[Claude] 상품 ${products.length}개 - 분할 호출 사용`);
-      return await generateBlogPostInChunks(client, keyword, products, priceRanges);
+      return await generateBlogPostInChunks(client, keyword, products, priceRanges, modelVersion);
     }
 
     // 4개 이하면 기존 단일 호출
@@ -51,7 +52,7 @@ export async function generateBlogPostWithClaude(
     const userPrompt = buildBlogPostPrompt(keyword, products, priceRanges);
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: modelVersion,
       max_tokens: 4096,
       system: BLOG_POST_SYSTEM_PROMPT,
       messages: [
@@ -121,7 +122,8 @@ async function generateBlogPostInChunks(
   client: Anthropic,
   keyword: string,
   products: CoupangProduct[],
-  priceRanges?: PriceRanges | null
+  priceRanges?: PriceRanges | null,
+  modelVersion: string = "claude-sonnet-4-20250514"
 ): Promise<BlogPost> {
   const CHUNK_SIZE = 4; // 파트1에 4개 상품
 
@@ -133,7 +135,7 @@ async function generateBlogPostInChunks(
   // 파트 1 호출: 도입부 + 선택기준 + 상품 1-4
   const part1Prompt = buildPart1Prompt(keyword, firstChunk, priceRanges);
   const part1Response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: modelVersion,
     max_tokens: 4096,
     system: BLOG_POST_SYSTEM_PROMPT,
     messages: [{ role: "user", content: part1Prompt }],
@@ -151,7 +153,7 @@ async function generateBlogPostInChunks(
   if (secondChunk.length > 0) {
     const part2Prompt = buildPart2Prompt(keyword, title || keyword, secondChunk, CHUNK_SIZE + 1);
     const part2Response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: modelVersion,
       max_tokens: 4096,
       system: BLOG_POST_SYSTEM_PROMPT,
       messages: [{ role: "user", content: part2Prompt }],
@@ -295,9 +297,10 @@ export class ClaudeApiClient {
   async generateBlogPost(
     keyword: string,
     products: CoupangProduct[],
-    priceRanges?: PriceRanges | null
+    priceRanges?: PriceRanges | null,
+    modelVersion?: string
   ): Promise<BlogPost> {
-    return generateBlogPostWithClaude(this.apiKey, keyword, products, priceRanges);
+    return generateBlogPostWithClaude(this.apiKey, keyword, products, priceRanges, modelVersion);
   }
 }
 

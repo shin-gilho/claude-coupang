@@ -5,6 +5,9 @@ export type {
   ApiKeys,
   PublishSettings,
   AiModel,
+  ClaudeModel,
+  GeminiModel,
+  AiModelVersion,
   WorkflowExecutionConfig,
 } from "./settings";
 

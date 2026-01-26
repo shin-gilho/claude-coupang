@@ -7,6 +7,7 @@ import type {
   ApiKeys,
   PublishSettings,
   AiModel,
+  AiModelVersion,
 } from "@/types";
 import {
   executeWorkflow,
@@ -32,6 +33,7 @@ export interface WorkflowParams {
   keyword: string;
   productCount?: number;
   aiModel: AiModel;
+  modelVersion: AiModelVersion;
   apiKeys: ApiKeys;
   publishSettings: PublishSettings;
 }
@@ -54,6 +56,7 @@ export function useWorkflow(): UseWorkflowReturn {
         keyword: params.keyword,
         productCount: params.productCount || 5,
         aiModel: params.aiModel,
+        modelVersion: params.modelVersion,
         apiKeys: params.apiKeys,
         publishSettings: params.publishSettings,
         onProgress: (newState) => {

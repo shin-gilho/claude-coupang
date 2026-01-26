@@ -35,10 +35,11 @@ export async function generateBlogPostWithGemini(
   apiKey: string,
   keyword: string,
   products: CoupangProduct[],
-  priceRanges?: PriceRanges | null
+  priceRanges?: PriceRanges | null,
+  modelVersion: string = "gemini-2.5-flash"
 ): Promise<BlogPost> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+  const model = genAI.getGenerativeModel({ model: modelVersion });
 
   try {
     // 상품이 4개 초과면 분할 호출로 콘텐츠 잘림 방지
@@ -116,10 +117,11 @@ async function generateBlogPostInChunks(
   const firstChunk = products.slice(0, CHUNK_SIZE);
   const secondChunk = products.slice(CHUNK_SIZE);
 
-  console.log(`[Gemini] 분할 호출 시작: 파트1(${firstChunk.length}개), 파트2(${secondChunk.length}개)`);
+  console.log(`[Gemini] 분할 호출 시작: 파트1(${firstChunk.length}개), 파트2(${secondChunk.length}개), 총 ${products.length}개`);
 
   // 파트 1 호출: 도입부 + 선택기준 + 상품 1-4
-  const part1Prompt = buildPart1Prompt(keyword, firstChunk, priceRanges);
+  // 전체 상품 수를 전달하여 제목에 정확한 TOP 숫자가 표시되도록 함
+  const part1Prompt = buildPart1Prompt(keyword, firstChunk, priceRanges, products.length);
   const part1FullPrompt = `${BLOG_POST_SYSTEM_PROMPT}\n\n${part1Prompt}`;
   const part1Result = await model.generateContent(part1FullPrompt);
   const part1Response = await part1Result.response;
@@ -275,9 +277,10 @@ export class GeminiApiClient {
   async generateBlogPost(
     keyword: string,
     products: CoupangProduct[],
-    priceRanges?: PriceRanges | null
+    priceRanges?: PriceRanges | null,
+    modelVersion?: string
   ): Promise<BlogPost> {
-    return generateBlogPostWithGemini(this.apiKey, keyword, products, priceRanges);
+    return generateBlogPostWithGemini(this.apiKey, keyword, products, priceRanges, modelVersion);
   }
 }
 

@@ -61,10 +61,10 @@ export const BLOG_POST_USER_PROMPT = `## 키워드
 - 독자에게 공감하는 마무리 멘트
 
 ## 상품 HTML 형식
-각 상품 이미지는 가운데 정렬, 버튼은 wp-button-animated 클래스 사용:
+각 상품 카드는 아래 순서로 작성 (상품명 h3 → 이미지 → 버튼):
 <div class="product-card" style="text-align:center;">
-  <img src="{{PRODUCT_IMAGE_N}}" alt="상품명" style="display:block;margin:0 auto;" />
   <h3>상품명</h3>
+  <img src="{{PRODUCT_IMAGE_N}}" alt="상품명" style="display:block;margin:0 auto;" />
   <a href="{{PRODUCT_LINK_N}}" class="wp-button-animated" target="_blank" rel="noopener noreferrer">버튼명</a>
 </div>
 
@@ -188,6 +188,9 @@ export function buildBlogPostPrompt(
 export const BLOG_POST_PART1_PROMPT = `## 키워드
 {keyword}
 
+## 전체 상품 수
+총 {totalCount}개 상품 (이 파트에서는 1~4번만 작성, 나머지는 다음 파트에서 작성)
+
 ## 상품 정보 (1~4번 상품)
 {products}
 
@@ -198,7 +201,7 @@ export const BLOG_POST_PART1_PROMPT = `## 키워드
 2026년
 
 ## 요구사항
-블로그 글의 **첫 번째 파트**를 작성하세요:
+다음 구조로 블로그 글을 작성하세요 (이 응답에서는 상품 1~4번까지만 작성):
 
 ### 0. 쿠팡 파트너스 고지문 (필수, 맨 처음에)
 반드시 글의 맨 처음에 다음 HTML을 포함하세요:
@@ -229,17 +232,28 @@ export const BLOG_POST_PART1_PROMPT = `## 키워드
 - 상품 카드 HTML 포함
 
 ## 상품 HTML 형식
+각 상품 카드는 아래 순서로 작성 (상품명 h3 → 이미지 → 버튼):
 <div class="product-card" style="text-align:center;">
-  <img src="{{PRODUCT_IMAGE_N}}" alt="상품명" style="display:block;margin:0 auto;" />
   <h3>상품명</h3>
-  <a href="{{PRODUCT_LINK_N}}" class="wp-button-animated" target="_blank" rel="noopener noreferrer">쿠팡에서 보기</a>
+  <img src="{{PRODUCT_IMAGE_N}}" alt="상품명" style="display:block;margin:0 auto;" />
+  <a href="{{PRODUCT_LINK_N}}" class="wp-button-animated" target="_blank" rel="noopener noreferrer">버튼명</a>
 </div>
+
+버튼명은 다음 3가지를 상품마다 순환하며 사용:
+1번 상품: "최저가 확인하기"
+2번 상품: "이 가격에 구매하기"
+3번 상품: "할인가 확인하기"
+4번 상품: "최저가 확인하기" (반복)
 
 ## 제목 작성 규칙
 - 30~60자
 - 키워드 포함
 - 연도는 반드시 2026년
-- 상품 개수 표기: "TOP7" 형식 사용
+- 상품 개수 표기: "TOP{totalCount}" 형식 사용 (예: 7개 상품이면 TOP7)
+- 주의: 이 파트에서 4개만 작성하더라도 제목은 반드시 전체 상품 수({totalCount}개) 기준으로 작성
+- 파트, 순위 범위 등 부가 정보를 제목에 절대 포함하지 마세요
+  - 잘못된 예: "무선 이어폰 추천 TOP7 (첫 번째 파트: 1~4위)"
+  - 올바른 예: "무선 이어폰 추천 TOP7 2026년 가성비 좋은 제품"
 
 ## 작성 규칙
 - 반말 사용 ("~해요", "~이에요", "~거든요")
@@ -248,13 +262,13 @@ export const BLOG_POST_PART1_PROMPT = `## 키워드
 
 ## 출력 형식
 ---TITLE---
-블로그 제목
+블로그 제목 (파트 정보 없이, 예: "무선 이어폰 추천 TOP7 2026년 가성비 좋은 제품")
 ---CONTENT---
 <html>본문 (고지문 + 제목p + 도입부 + 선택기준 + 상품 1~4 리뷰)</html>
 ---END---`;
 
 /**
- * 파트 2 프롬프트 (상품 5~7 + 결론)
+ * 파트 2 프롬프트 (상품 5~N + 결론)
  */
 export const BLOG_POST_PART2_PROMPT = `## 키워드
 {keyword}
@@ -262,17 +276,21 @@ export const BLOG_POST_PART2_PROMPT = `## 키워드
 ## 이전 파트 제목
 {title}
 
-## 남은 상품 정보 (5~7번 상품)
+## 남은 상품 정보 ({startIndex}번부터)
 {products}
 
 ## 현재 연도
 2026년
 
-## 요구사항
-블로그 글의 **두 번째 파트**를 작성하세요.
-이전 파트와 동일한 톤과 스타일을 유지하세요.
+## 중요: 이어서 작성하기
+이 파트는 이전 파트의 **연속**입니다.
+- 제목을 다시 작성하지 마세요
+- 서론/도입부를 다시 작성하지 마세요
+- 선택 기준을 다시 작성하지 마세요
+- 바로 상품 {startIndex}번 리뷰부터 시작하세요
 
-### 상품 5~7번 상세 리뷰 (상품당 약 400~450자)
+## 요구사항
+### 상품 {startIndex}~{endIndex}번 상세 리뷰 (상품당 약 400~450자)
 각 상품에 대해:
 - 소구점을 정확히 파악한 2문단 설명
 - 장점 3가지 (bullet point)
@@ -284,21 +302,29 @@ export const BLOG_POST_PART2_PROMPT = `## 키워드
 - 용도별 선택 가이드
 - 독자에게 공감하는 마무리 멘트
 
-## 상품 HTML 형식
+## 상품 HTML 형식 (Part 1과 동일하게 유지)
+상품명은 반드시 h3 태그, 순서는 h3 → 이미지 → 버튼:
 <div class="product-card" style="text-align:center;">
+  <h3>상품명</h3>  <!-- 반드시 h3 사용 -->
   <img src="{{PRODUCT_IMAGE_N}}" alt="상품명" style="display:block;margin:0 auto;" />
-  <h3>상품명</h3>
-  <a href="{{PRODUCT_LINK_N}}" class="wp-button-animated" target="_blank" rel="noopener noreferrer">쿠팡에서 보기</a>
+  <a href="{{PRODUCT_LINK_N}}" class="wp-button-animated" target="_blank" rel="noopener noreferrer">버튼명</a>
 </div>
+
+버튼명은 상품 번호에 따라 순환:
+5번 상품: "이 가격에 구매하기" (5 % 3 = 2)
+6번 상품: "할인가 확인하기" (6 % 3 = 0 → 3번째)
+7번 상품: "최저가 확인하기" (7 % 3 = 1)
+...
 
 ## 작성 규칙
 - 반말 사용 ("~해요", "~이에요", "~거든요")
 - 실제 사용 경험처럼 작성
-- h2, h3, p, ul, li 태그 사용
+- 상품명은 반드시 h3 태그 사용 (h2는 섹션 제목에만 사용)
+- 제목, 서론, 선택기준은 절대 다시 작성하지 않음
 
 ## 출력 형식
 ---CONTENT---
-<html>본문 (상품 5~7 리뷰 + 결론)</html>
+<html>본문 (상품 {startIndex}~{endIndex} 리뷰 + 결론만, 제목/서론 없이)</html>
 ---END---`;
 
 /**
@@ -321,8 +347,10 @@ export function buildPart1Prompt(
     low: { min: number; max: number; count: number };
     mid: { min: number; max: number; count: number };
     high: { min: number; max: number; count: number };
-  } | null
+  } | null,
+  totalCount?: number
 ): string {
+  const total = totalCount || products.length;
   const productsText = products
     .map(
       (p, i) => `
@@ -337,12 +365,13 @@ export function buildPart1Prompt(
   const priceRangesText = formatPriceRanges(priceRanges || null);
 
   return BLOG_POST_PART1_PROMPT.replace("{keyword}", keyword)
+    .replace(/{totalCount}/g, String(total))
     .replace("{products}", productsText)
     .replace("{priceRanges}", priceRangesText);
 }
 
 /**
- * 파트 2 프롬프트 빌더 (상품 5~7)
+ * 파트 2 프롬프트 빌더 (상품 5~N)
  */
 export function buildPart2Prompt(
   keyword: string,
@@ -360,6 +389,7 @@ export function buildPart2Prompt(
   }>,
   startIndex: number = 5
 ): string {
+  const endIndex = startIndex + products.length - 1;
   const productsText = products
     .map(
       (p, i) => `
@@ -373,5 +403,7 @@ export function buildPart2Prompt(
 
   return BLOG_POST_PART2_PROMPT.replace("{keyword}", keyword)
     .replace("{title}", title)
+    .replace(/{startIndex}/g, String(startIndex))
+    .replace(/{endIndex}/g, String(endIndex))
     .replace("{products}", productsText);
 }
