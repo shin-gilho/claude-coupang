@@ -24,6 +24,7 @@ export interface ApiKeys {
  * 발행 설정 타입
  */
 export interface PublishSettings {
+  enabled: boolean; // 예약 발행 사용 여부
   intervalMinutes: number;
   startTime: string; // HH:mm format
   endTime: string; // HH:mm format

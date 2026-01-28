@@ -83,14 +83,31 @@ export async function generateBlogPostWithClaude(
 
 /**
  * 플레이스홀더를 실제 상품 URL/이미지로 교체
+ * img 태그 안에 없는 이미지 플레이스홀더는 자동으로 img 태그로 감싸기
  */
 function replacePlaceholders(content: string, products: CoupangProduct[]): string {
   let result = content;
   products.forEach((p, i) => {
     const index = i + 1;
-    // URL 플레이스홀더 교체 (다양한 형식 지원)
+
+    // URL 플레이스홀더 교체
     result = result.replace(new RegExp(`\\{\\{PRODUCT_LINK_${index}\\}\\}`, 'g'), p.productUrl);
-    result = result.replace(new RegExp(`\\{\\{PRODUCT_IMAGE_${index}\\}\\}`, 'g'), p.productImage);
+
+    // 이미지 플레이스홀더 교체 - img 태그 안에 있는지 확인
+    const imgPlaceholder = `{{PRODUCT_IMAGE_${index}}}`;
+    const imgTagPattern = new RegExp(`<img[^>]*src=["']?\\{\\{PRODUCT_IMAGE_${index}\\}\\}["']?[^>]*/?>`, 'gi');
+
+    // 먼저 img 태그 안에 있는 플레이스홀더 교체
+    result = result.replace(imgTagPattern, (match) => {
+      return match.replace(imgPlaceholder, p.productImage);
+    });
+
+    // 남아있는 플레이스홀더는 img 태그로 감싸서 교체 (단독으로 있는 경우)
+    // 줄 단위로 또는 태그 사이에 있는 플레이스홀더
+    const standalonePattern = new RegExp(`(?<!src=["'])\\{\\{PRODUCT_IMAGE_${index}\\}\\}`, 'g');
+    result = result.replace(standalonePattern,
+      `<img src="${p.productImage}" alt="${p.productName}" style="display:block;margin:0 auto;max-width:100%;" />`
+    );
   });
   return result;
 }

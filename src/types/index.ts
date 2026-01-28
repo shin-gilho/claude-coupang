@@ -39,6 +39,7 @@ export type {
   WorkflowState,
   WorkflowResult,
   ProgressCallback,
+  KeywordResult,
 } from "./workflow";
 
 // API

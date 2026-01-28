@@ -41,7 +41,7 @@ export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 워크플로우 훅
-  const { state: workflowState, isRunning, result, run, reset } = useWorkflow();
+  const { state: workflowState, isRunning, keywordResults, run, stop, reset } = useWorkflow();
 
   // 로컬 스토리지에서 설정 불러오기
   useEffect(() => {
@@ -58,7 +58,12 @@ export default function Home() {
 
     if (storedSettings) {
       try {
-        setPublishSettings(JSON.parse(storedSettings));
+        const parsed = JSON.parse(storedSettings);
+        // 기존 설정에 enabled 필드가 없는 경우 기본값으로 병합
+        setPublishSettings({
+          ...DEFAULT_PUBLISH_SETTINGS,
+          ...parsed,
+        });
       } catch (e) {
         console.error("Failed to parse publish settings:", e);
       }
@@ -108,8 +113,8 @@ export default function Home() {
     }
 
     try {
-      const workflowResult = await run({
-        keyword: keywords[0], // 첫 번째 키워드로 실행
+      await run({
+        keywords, // 모든 키워드 전달
         productCount: PRODUCT_SEARCH_SETTINGS.LIMIT,
         aiModel,
         modelVersion,
@@ -117,15 +122,16 @@ export default function Home() {
         publishSettings,
       });
 
-      if (workflowResult.success) {
-        addToast("success", "블로그 글이 성공적으로 발행되었습니다!");
-      } else {
-        addToast("error", workflowResult.error || "워크플로우 실행에 실패했습니다.");
-      }
+      addToast("success", `${keywords.length}개 키워드 처리가 완료되었습니다!`);
     } catch (error) {
       console.error("Workflow error:", error);
       addToast("error", "예상치 못한 오류가 발생했습니다.");
     }
+  };
+
+  const handleStop = () => {
+    stop();
+    addToast("info", "워크플로우를 중단합니다...");
   };
 
   const handleReset = () => {
@@ -204,16 +210,26 @@ export default function Home() {
 
           {/* 실행 버튼 */}
           <div className="mt-6 flex gap-4">
-            <Button
-              size="lg"
-              className="flex-1"
-              onClick={handleExecute}
-              disabled={isRunning || keywords.length === 0}
-              isLoading={isRunning}
-            >
-              {isRunning ? "실행 중..." : "실행하기"}
-            </Button>
-            {(workflowState.status === "completed" || workflowState.status === "error") && (
+            {!isRunning ? (
+              <Button
+                size="lg"
+                className="flex-1"
+                onClick={handleExecute}
+                disabled={keywords.length === 0}
+              >
+                실행하기
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                variant="danger"
+                className="flex-1"
+                onClick={handleStop}
+              >
+                중단하기
+              </Button>
+            )}
+            {(workflowState.status === "completed" || workflowState.status === "error") && !isRunning && (
               <Button size="lg" variant="secondary" onClick={handleReset}>
                 초기화
               </Button>
@@ -224,6 +240,33 @@ export default function Home() {
           <Card className="mt-8">
             <CardTitle>진행 상황</CardTitle>
             <CardContent className="space-y-6">
+              {/* 다중 키워드 진행 상황 */}
+              {workflowState.totalKeywords && workflowState.totalKeywords > 1 && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      키워드 진행률
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {(workflowState.currentKeywordIndex ?? 0) + 1} / {workflowState.totalKeywords}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(((workflowState.currentKeywordIndex ?? 0) + 1) / workflowState.totalKeywords) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  {workflowState.nextScheduledTime && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      다음 실행 예정: {workflowState.nextScheduledTime.toLocaleString("ko-KR")}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {workflowState.status !== "idle" && (
                 <>
                   <StepIndicator currentStep={workflowState.currentStep} status={workflowState.status} />
@@ -245,31 +288,75 @@ export default function Home() {
                 error={workflowState.error}
               />
 
-              {/* 결과 표시 */}
-              {result?.success && result.wordpressResponse && (
+              {/* 키워드별 결과 표시 */}
+              {keywordResults.length > 0 && (
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-3">
-                    발행 결과
+                    키워드별 결과
                   </h4>
-                  <div className="bg-success-50 p-4 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-success-700">
-                          {result.blogPost?.title}
-                        </p>
-                        <p className="text-xs text-success-600 mt-1">
-                          예약 발행: {result.scheduledDate?.toLocaleString("ko-KR")}
-                        </p>
-                      </div>
-                      <a
-                        href={result.wordpressResponse.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
+                  <div className="space-y-2">
+                    {keywordResults.map((kr, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg flex items-center justify-between ${
+                          kr.status === "completed"
+                            ? "bg-green-50 border border-green-200"
+                            : kr.status === "error"
+                            ? "bg-red-50 border border-red-200"
+                            : kr.status === "running"
+                            ? "bg-blue-50 border border-blue-200"
+                            : kr.status === "waiting"
+                            ? "bg-yellow-50 border border-yellow-200"
+                            : "bg-gray-50 border border-gray-200"
+                        }`}
                       >
-                        글 보기
-                      </a>
-                    </div>
+                        <div className="flex items-center gap-3">
+                          {/* 상태 아이콘 */}
+                          {kr.status === "completed" && (
+                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                          {kr.status === "error" && (
+                            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          )}
+                          {kr.status === "running" && (
+                            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          )}
+                          {kr.status === "waiting" && (
+                            <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
+                          {kr.status === "pending" && (
+                            <div className="w-5 h-5 rounded-full bg-gray-300" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium">{kr.keyword}</p>
+                            {kr.scheduledTime && kr.status === "waiting" && (
+                              <p className="text-xs text-gray-500">
+                                예정: {kr.scheduledTime.toLocaleTimeString("ko-KR")}
+                              </p>
+                            )}
+                            {kr.error && (
+                              <p className="text-xs text-red-500">{kr.error}</p>
+                            )}
+                          </div>
+                        </div>
+                        {kr.result?.wordpressResponse?.link && (
+                          <a
+                            href={kr.result.wordpressResponse.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline"
+                          >
+                            글 보기
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

@@ -11,7 +11,8 @@ export const STORAGE_KEYS = {
 
 // 기본 발행 설정
 export const DEFAULT_PUBLISH_SETTINGS = {
-  intervalMinutes: 10,
+  enabled: false, // 기본: 즉시 발행
+  intervalMinutes: 60, // 1시간 간격
   startTime: "09:00",
   endTime: "18:00",
 } as const;

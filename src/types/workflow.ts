@@ -24,6 +24,22 @@ export interface WorkflowState {
   error?: string;
   products?: CoupangProduct[];
   blogPost?: BlogPost;
+  // 다중 키워드 관련
+  currentKeywordIndex?: number;
+  totalKeywords?: number;
+  nextScheduledTime?: Date;
+  keywordResults?: KeywordResult[];
+}
+
+/**
+ * 키워드별 실행 결과
+ */
+export interface KeywordResult {
+  keyword: string;
+  status: "pending" | "waiting" | "running" | "completed" | "error";
+  scheduledTime?: Date;
+  result?: WorkflowResult;
+  error?: string;
 }
 
 /**
