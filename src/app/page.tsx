@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Header, Container } from "@/components/layout";
-import { KeywordForm, PublishSettings } from "@/components/forms";
+import { KeywordForm, PublishSettings, DuplicateWarning } from "@/components/forms";
 import { ProgressBar, StepIndicator, StatusMessage } from "@/components/progress";
 import { Button, Card, CardTitle, CardContent } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { DEFAULT_PUBLISH_SETTINGS, STORAGE_KEYS, PRODUCT_SEARCH_SETTINGS, AI_MODEL_SETTINGS } from "@/constants";
-import { useWorkflow } from "@/hooks";
-import type { AiModel, AiModelVersion, PublishSettings as PublishSettingsType, ApiKeys } from "@/types";
+import { useWorkflow, useKeywordHistory } from "@/hooks";
+import type { AiModel, AiModelVersion, PublishSettings as PublishSettingsType, ApiKeys, DuplicateKeywordInfo } from "@/types";
 
 export default function Home() {
   const router = useRouter();
@@ -42,6 +42,16 @@ export default function Home() {
 
   // 워크플로우 훅
   const { state: workflowState, isRunning, keywordResults, run, stop, reset } = useWorkflow();
+
+  // 키워드 히스토리 훅
+  const { checkDuplicates, addEntry } = useKeywordHistory();
+
+  // 중복 키워드 상태
+  const [duplicateWarnings, setDuplicateWarnings] = useState<DuplicateKeywordInfo[]>([]);
+  const [duplicatesChecked, setDuplicatesChecked] = useState(false);
+
+  // 히스토리 저장 여부 추적 (중복 저장 방지)
+  const historySavedRef = useRef(false);
 
   // 로컬 스토리지에서 설정 불러오기
   useEffect(() => {
@@ -78,6 +88,50 @@ export default function Home() {
       localStorage.setItem(STORAGE_KEYS.PUBLISH_SETTINGS, JSON.stringify(publishSettings));
     }
   }, [publishSettings, isLoaded]);
+
+  // 키워드 변경 시 중복 체크
+  useEffect(() => {
+    if (keywords.length > 0 && !duplicatesChecked) {
+      const duplicates = checkDuplicates(keywords);
+      setDuplicateWarnings(duplicates);
+    } else if (keywords.length === 0) {
+      setDuplicateWarnings([]);
+      setDuplicatesChecked(false);
+    }
+  }, [keywords, checkDuplicates, duplicatesChecked]);
+
+  // 워크플로우 완료 시 히스토리 저장
+  useEffect(() => {
+    const shouldSave = workflowState.status === "completed" ||
+      (workflowState.status === "error" && keywordResults.length > 0);
+
+    if (shouldSave && !historySavedRef.current) {
+      historySavedRef.current = true;
+      // 완료된 키워드들을 히스토리에 저장
+      keywordResults.forEach((kr) => {
+        if (kr.status === "completed" || kr.status === "error") {
+          addEntry({
+            keyword: kr.keyword,
+            status: kr.status === "completed" ? "success" : "error",
+            aiModel: aiModel,
+            postUrl: kr.result?.wordpressResponse?.link,
+            errorMessage: kr.error,
+          });
+        }
+      });
+    }
+
+    // 실행 시작 시 플래그 초기화
+    if (workflowState.status === "running") {
+      historySavedRef.current = false;
+    }
+  }, [workflowState.status, keywordResults, aiModel, addEntry]);
+
+  // 중복 경고 무시
+  const handleDismissDuplicates = useCallback(() => {
+    setDuplicateWarnings([]);
+    setDuplicatesChecked(true);
+  }, []);
 
   // API 키 유효성 확인
   const hasValidApiKeys = () => {
@@ -136,6 +190,8 @@ export default function Home() {
 
   const handleReset = () => {
     reset();
+    setDuplicatesChecked(false);
+    setDuplicateWarnings([]);
     addToast("info", "워크플로우가 초기화되었습니다.");
   };
 
@@ -185,6 +241,16 @@ export default function Home() {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* 중복 키워드 경고 */}
+          {duplicateWarnings.length > 0 && (
+            <div className="mb-6">
+              <DuplicateWarning
+                duplicates={duplicateWarnings}
+                onDismiss={handleDismissDuplicates}
+              />
             </div>
           )}
 

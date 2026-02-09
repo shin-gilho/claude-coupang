@@ -45,3 +45,6 @@ export type {
 // API
 export type { ApiErrorCode, ApiError, ApiResponse } from "./api";
 export { ERROR_MESSAGES, createApiError } from "./api";
+
+// History
+export type { KeywordHistoryEntry, DuplicateKeywordInfo } from "./history";

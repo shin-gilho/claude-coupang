@@ -5,6 +5,7 @@ export {
   PRODUCT_SEARCH_SETTINGS,
   AI_MODEL_OPTIONS,
   AI_MODEL_SETTINGS,
+  HISTORY_SETTINGS,
 } from "./config";
 
 export {

@@ -7,6 +7,13 @@ export const STORAGE_KEYS = {
   API_KEYS: "coupang-blog-api-keys",
   PUBLISH_SETTINGS: "coupang-blog-publish-settings",
   LAST_USED_AI: "coupang-blog-last-ai",
+  KEYWORD_HISTORY: "coupang-blog-keyword-history",
+} as const;
+
+// 히스토리 설정
+export const HISTORY_SETTINGS = {
+  MAX_ENTRIES: 500,     // 최대 저장 항목 수
+  RETENTION_DAYS: 90,   // 보관 기간 (일)
 } as const;
 
 // 기본 발행 설정
